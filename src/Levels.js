@@ -58,23 +58,12 @@ Joust.levels.demo.prototype =
 
     spawnSprites: function ()
     {
-        var kn = (Joust.utils.createSpriteByType(this.map.objects['objects'], 'hero', 'knight', 0, this.game))[0];
-        this.sprites.knight = new Joust.objectsConstructors.Knight(this.game, kn.x, kn.y, 250, 1, 300, 100, Joust.utils.colors.blue);
-        kn.destroy();
+        this.sprites.knight = Joust.spawners.knight(this, 'objects', 'knight')
+
         this.game.camera.follow(this.sprites.knight);
 
         this.sprites.enemies = {};
-
-        this.sprites.enemies.spiky = Joust.utils.createSpriteByType(this.map.objects['objects'], 'spiky', 'spiky', 0, this.game);
-
-        for (var cont = 0; cont < this.sprites.enemies.spiky.length; cont++)
-        {
-            var ele = this.sprites.enemies.spiky[cont];
-            ele = new Joust.objectsConstructors.Spiky(ele, 50, 10, this.sprites.knight);
-            ele.animations.add('run', [0, 1, 2, 3, 4], Math.round(Math.random() * 7 + 3), true);
-            ele.animations.play('run');
-            this.sprites.enemies.spiky[cont] = ele;
-        }
+        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', 'spiky', this.sprites.knight);
     },
 
     render: function ()

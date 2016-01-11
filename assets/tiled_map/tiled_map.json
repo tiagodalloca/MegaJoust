@@ -13,7 +13,7 @@
         }, 
         {
          "height":0,
-         "image":"back.png",
+         "image":"..\/..\/..\/..\/..\/..\/CORDOVA\/Phaser Teste\/Joust\/www\/app\/tiled_map\/back.png",
          "name":"background",
          "opacity":1,
          "type":"imagelayer",
@@ -88,8 +88,8 @@
                  "type":"spiky",
                  "visible":true,
                  "width":55,
-                 "x":418.333333333333,
-                 "y":892.666666666667
+                 "x":418.333,
+                 "y":892.667
                 }, 
                 {
                  "gid":1,
@@ -104,7 +104,7 @@
                  "type":"spiky",
                  "visible":true,
                  "width":55,
-                 "x":127.666666666667,
+                 "x":127.667,
                  "y":894
                 }, 
                 {
@@ -117,7 +117,7 @@
 
                     },
                  "rotation":0,
-                 "type":"hero",
+                 "type":"knight",
                  "visible":true,
                  "width":70,
                  "x":267,
@@ -152,7 +152,7 @@
  "tilesets":[
         {
          "firstgid":1,
-         "image":"..\/sprites\/spiky.png",
+         "image":"..\/..\/..\/..\/..\/..\/CORDOVA\/Phaser Teste\/Joust\/www\/app\/sprites\/spiky.png",
          "imageheight":55,
          "imagewidth":328,
          "margin":0,
@@ -168,7 +168,7 @@
         }, 
         {
          "firstgid":6,
-         "image":"gray_pltf.png",
+         "image":"..\/..\/..\/..\/..\/..\/CORDOVA\/Phaser Teste\/Joust\/www\/app\/tiled_map\/gray_pltf.png",
          "imageheight":100,
          "imagewidth":100,
          "margin":0,
@@ -184,7 +184,7 @@
         }, 
         {
          "firstgid":15,
-         "image":"iced_pltf.png",
+         "image":"..\/..\/..\/..\/..\/..\/CORDOVA\/Phaser Teste\/Joust\/www\/app\/tiled_map\/iced_pltf.png",
          "imageheight":96,
          "imagewidth":96,
          "margin":0,
@@ -200,7 +200,7 @@
         }, 
         {
          "firstgid":24,
-         "image":"physics_tiles.png",
+         "image":"..\/..\/..\/..\/..\/..\/CORDOVA\/Phaser Teste\/Joust\/www\/app\/tiled_map\/physics_tiles.png",
          "imageheight":32,
          "imagewidth":32,
          "margin":0,
@@ -216,7 +216,7 @@
         }, 
         {
          "firstgid":25,
-         "image":"..\/sprites\/knight.png",
+         "image":"..\/..\/..\/..\/..\/..\/CORDOVA\/Phaser Teste\/Joust\/www\/app\/sprites\/knight.png",
          "imageheight":61,
          "imagewidth":495,
          "margin":0,

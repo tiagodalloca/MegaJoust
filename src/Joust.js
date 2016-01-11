@@ -313,7 +313,33 @@ var Joust =
             Joust.levels.currentLevel.spawnSprites();
         }
     },
-    
+
+    spawners :
+    {
+        knight: function (level, objectLayerName, cacheTextureName)
+        {
+            var kn = (Joust.utils.createSpriteByType(level.map.objects[objectLayerName], 'knight', cacheTextureName, 0, level.game))[0];
+            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 250, 1, 300, 100, Joust.utils.colors.blue);
+            kn.destroy();
+            return knight;
+        },
+
+        spiky : function(level, objectLayerName, cacheTextureName,target)
+        {
+            var elems = Joust.utils.createSpriteByType(level.map.objects[objectLayerName], 'spiky', cacheTextureName, 0, level.game);
+
+            for (var cont = 0; cont < elems; cont++)
+            {
+                var ele = elems[cont];
+                ele = new Joust.objectsConstructors.Spiky(ele, 50, 10, target);
+                ele.animations.add('run', [0, 1, 2, 3, 4], Math.round(Math.random() * 7 + 3), true);
+                ele.animations.play('run');
+                elems[cont] = ele;
+            }
+
+            return elems;
+        }
+    }
 };
 
 //extending(Phaser.Sprite, Joust.objectsConstructors.Knight);
