@@ -328,7 +328,7 @@ var Joust =
         {
             var elems = Joust.utils.createSpriteByType(level.map.objects[objectLayerName], 'spiky', cacheTextureName, 0, level.game);
 
-            for (var cont = 0; cont < elems; cont++)
+            for (var cont = 0; cont < elems.length; cont++)
             {
                 var ele = elems[cont];
                 ele = new Joust.objectsConstructors.Spiky(ele, 50, 10, target);
