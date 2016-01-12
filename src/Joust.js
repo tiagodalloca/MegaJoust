@@ -33,9 +33,9 @@ var Joust =
 
     objectsConstructors:
     {
-        Knight: function (game, x, y, vel, size, drag, mass, tint)
+        Knight: function (game, x, y, key, vel, size, drag, mass, tint)
         {
-            Phaser.Sprite.call(this, game, x, y, 'knight');
+            Phaser.Sprite.call(this, game, x, y, key);
             this.tint = tint;
             this.size = size;
             this.scale.x = this.size;
@@ -180,18 +180,20 @@ var Joust =
             });
         },
 
-        Enemie: function (sprite)
+        Enemie: function (x, y, game, key) //Abstract class
         {
-            Phaser.Sprite.call(this, sprite.game, sprite.x, sprite.y, sprite.key);
-            sprite.game.add.existing(this);
-            sprite.destroy();
+            if (this.constructor === Joust.Enemie)
+                throw new Error("Enemie cannot be instancieted");
+
+            Phaser.Sprite.call(this, game, x, y, key);
+            game.add.existing(this);
             this.game.physics.arcade.enable(this);
             this.body.collideWorldBounds = true;
         },
 
-        Spiky: function (sprite, vel, drag, target)
+        Spiky: function (x, y, game, key, vel, drag, target)
         {
-            Joust.objectsConstructors.Enemie.call(this, sprite);
+            Joust.objectsConstructors.Enemie.call(this, x, y, game, key);
 
             this.vel = vel;
             this.body.drag.x = drag;
@@ -222,6 +224,13 @@ var Joust =
 
         },
 
+        Crab: function (x, y, game, key, vel)
+        {
+            Joust.objectsConstructors.Enemie.call(this, x, y, game, key);
+
+            this.vel = vel;
+        }
+
         //Not sprites
 
         //Level: function (preload, create, render, update) //Class that represents a stage or level from the game
@@ -247,6 +256,25 @@ var Joust =
                 {
                     var asd = new Phaser.Sprite(game, arrObjs[cont].x, arrObjs[cont].y - 50, stringCacheTexture, frame);
                     game.add.existing(asd);
+                    sprites.push(asd);
+                }
+            }
+
+            return sprites
+        },
+
+        createSpriteProtoByType: function (arrObjs, type)
+        {
+            var sprites = [];
+
+            for (var cont = 0; cont < arrObjs.length; cont++)
+            {
+                if (arrObjs[cont].type === type)
+                {
+                    var asd = {};
+                    asd.x = arrObjs[cont].x;
+                    asd.y = arrObjs[cont].y-40;
+                    //Other properties might be added
                     sprites.push(asd);
                 }
             }
@@ -316,22 +344,21 @@ var Joust =
 
     spawners :
     {
-        knight: function (level, objectLayerName, cacheTextureName)
+        knight: function (level, objectLayerName)
         {
-            var kn = (Joust.utils.createSpriteByType(level.map.objects[objectLayerName], 'knight', cacheTextureName, 0, level.game))[0];
-            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 250, 1, 300, 100, Joust.utils.colors.blue);
-            kn.destroy();
+            var kn = (Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'knight'))[0];
+            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 'knight', 250, 1, 300, 100, Joust.utils.colors.blue);
             return knight;
         },
 
-        spiky : function(level, objectLayerName, cacheTextureName,target)
+        spiky : function(level, objectLayerName, target)
         {
-            var elems = Joust.utils.createSpriteByType(level.map.objects[objectLayerName], 'spiky', cacheTextureName, 0, level.game);
+            var elems = Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'spiky');
 
             for (var cont = 0; cont < elems.length; cont++)
             {
                 var ele = elems[cont];
-                ele = new Joust.objectsConstructors.Spiky(ele, 50, 10, target);
+                ele = new Joust.objectsConstructors.Spiky(ele.x, ele.y, level.game, 'spiky', 50, 10, target);
                 ele.animations.add('run', [0, 1, 2, 3, 4], Math.round(Math.random() * 7 + 3), true);
                 ele.animations.play('run');
                 elems[cont] = ele;

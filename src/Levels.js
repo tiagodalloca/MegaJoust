@@ -58,10 +58,10 @@ Joust.levels.demo.prototype =
 
     spawnSprites: function ()
     {
-        this.sprites.knight = Joust.spawners.knight(this, 'objects', 'knight')
+        this.sprites.knight = Joust.spawners.knight(this, 'objects')
 
         this.sprites.enemies = {};
-        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', 'spiky', this.sprites.knight);
+        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight);
 
         this.game.camera.follow(this.sprites.knight);
     },
