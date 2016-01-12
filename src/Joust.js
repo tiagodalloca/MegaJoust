@@ -45,7 +45,6 @@ var Joust =
 
             game.physics.arcade.enable(this);
             this.body.collideWorldBounds = true;
-            this.body.checkCollision.up = false;
             this.body.width -= this.size * 5;
             this.body.height -= this.size * 5;
             this.body.mass = mass;
@@ -189,17 +188,23 @@ var Joust =
             game.add.existing(this);
             this.game.physics.arcade.enable(this);
             this.body.collideWorldBounds = true;
+
+            this.anchor.x = 0.5;
+            this.anchor.y = 0.5;
+
+            if (!!arguments[4] && typeof arguments[4] === 'number')
+                this.scale.set(arguments[4]);
         },
 
         Spiky: function (x, y, game, key, vel, drag, target)
         {
-            Joust.objectsConstructors.Enemie.call(this, x, y, game, key);
+            Joust.objectsConstructors.Enemie.call(this, x, y, game, key, arguments[arguments.length - 1]);
 
             this.vel = vel;
             this.body.drag.x = drag;
-            this.body.height -= 10;
-            this.anchor.x = 0.5;
-            this.anchor.y = 0.5;
+
+            this.animations.add('run', [0, 1, 2, 3, 4], Math.round(Math.random() * 7 + 3), true);
+            this.animations.play('run');
 
             var _this = this;
 
@@ -216,19 +221,46 @@ var Joust =
                 }
 
                 else if (_this.body.velocity.x > 0)
-                    _this.scale.x = -1;
+                    _this.scale.x = -1 * Math.abs(_this.scale.x);
 
                 else
-                    _this.scale.x = 1;
+                    _this.scale.x = Math.abs(_this.scale.x);
             });
 
         },
 
-        Crab: function (x, y, game, key, vel)
+        Crab: function (x, y, game, key, vel, target)
         {
-            Joust.objectsConstructors.Enemie.call(this, x, y, game, key);
+            Joust.objectsConstructors.Enemie.call(this, x, y, game, key, arguments[arguments.length - 1]);
 
             this.vel = vel;
+            this.jumpVel = -30 * this.vel;
+
+            this.animations.add('run', [0, 1, 2, 3], Math.round(Math.random() * 7 + 3), true);
+            this.animations.play('run');
+            var _this = this;
+
+            this.game.time.events.onUpdate.add(
+            function ()
+            {
+                var touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
+
+                if (touchingTheFloor)
+                {
+                    if (_this.x > target.x)
+                        _this.body.velocity.add(_this.vel * Math.random() * -1, _this.jumpVel);
+
+                    else
+                        _this.body.velocity.add(_this.vel * Math.random(), _this.jumpVel);
+                }
+
+                if (_this.body.velocity.x > 0)
+                    _this.scale.x = -1 * Math.abs(_this.scale.x);
+
+                else
+                    _this.scale.x = Math.abs(_this.scale.x);
+            });
+
         }
 
         //Not sprites
@@ -273,7 +305,7 @@ var Joust =
                 {
                     var asd = {};
                     asd.x = arrObjs[cont].x;
-                    asd.y = arrObjs[cont].y-40;
+                    asd.y = arrObjs[cont].y - 40;
                     //Other properties might be added
                     sprites.push(asd);
                 }
@@ -323,6 +355,32 @@ var Joust =
             blue: 0x004fcc,
             darkblue: 0x000577,
             purple: 0x7500a8
+        },
+
+        setCollisionDirectionsFromTiles: function(tilemapLayer, direction)
+        {
+            var clt = tilemapLayer;
+
+            clt.map.layers[clt.index].data.forEach(
+            function (elem, i, arr)
+            {
+                elem.forEach(
+                function (elem, i, arr)
+                {
+                    if (elem.index != -1)
+                    {
+                        elem.collideUp = direction.top;
+                        elem.collideDown = direction.bottom;
+                        elem.collideLeft = direction.left;
+                        elem.collideRight = direction.right;
+
+                        elem.faceTop = direction.top;
+                        elem.faceBottom = direction.bottom;
+                        elem.faceLeft = direction.left;
+                        elem.faceRight = direction.right;
+                    }
+                });
+            });
         }
     },
 
@@ -342,7 +400,7 @@ var Joust =
         }
     },
 
-    spawners :
+    spawners:
     {
         knight: function (level, objectLayerName)
         {
@@ -351,16 +409,28 @@ var Joust =
             return knight;
         },
 
-        spiky : function(level, objectLayerName, target)
+        spiky: function (level, objectLayerName, target, scale)
         {
             var elems = Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'spiky');
 
             for (var cont = 0; cont < elems.length; cont++)
             {
                 var ele = elems[cont];
-                ele = new Joust.objectsConstructors.Spiky(ele.x, ele.y, level.game, 'spiky', 50, 10, target);
-                ele.animations.add('run', [0, 1, 2, 3, 4], Math.round(Math.random() * 7 + 3), true);
-                ele.animations.play('run');
+                ele = new Joust.objectsConstructors.Spiky(ele.x, ele.y, level.game, 'spiky', 50, 10, target, scale);
+                elems[cont] = ele;
+            }
+
+            return elems;
+        },
+
+        crab: function (level, objectLayerName, target, scale)
+        {
+            var elems = Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'crab');
+
+            for (var cont = 0; cont < elems.length; cont++)
+            {
+                var ele = elems[cont];
+                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 20, target, scale);
                 elems[cont] = ele;
             }
 
@@ -378,3 +448,4 @@ var Joust =
 Joust.objectsConstructors.Knight.extends(Phaser.Sprite);
 Joust.objectsConstructors.Enemie.extends(Phaser.Sprite);
 Joust.objectsConstructors.Spiky.extends(Joust.objectsConstructors.Enemie);
+Joust.objectsConstructors.Crab.extends(Joust.objectsConstructors.Enemie);

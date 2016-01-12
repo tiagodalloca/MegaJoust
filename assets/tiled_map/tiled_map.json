@@ -40,24 +40,8 @@
                  "type":"spiky",
                  "visible":true,
                  "width":55,
-                 "x":325,
-                 "y":1118
-                }, 
-                {
-                 "gid":1,
-                 "height":53,
-                 "id":34,
-                 "name":"",
-                 "properties":
-                    {
-
-                    },
-                 "rotation":0,
-                 "type":"spiky",
-                 "visible":true,
-                 "width":55,
-                 "x":411.667,
-                 "y":1114
+                 "x":201,
+                 "y":1112
                 }, 
                 {
                  "gid":1,
@@ -72,8 +56,8 @@
                  "type":"spiky",
                  "visible":true,
                  "width":55,
-                 "x":495.667,
-                 "y":1115.33
+                 "x":819.667,
+                 "y":1117.33
                 }, 
                 {
                  "gid":1,
@@ -92,22 +76,6 @@
                  "y":892.667
                 }, 
                 {
-                 "gid":1,
-                 "height":53,
-                 "id":40,
-                 "name":"",
-                 "properties":
-                    {
-
-                    },
-                 "rotation":0,
-                 "type":"spiky",
-                 "visible":true,
-                 "width":55,
-                 "x":127.667,
-                 "y":894
-                }, 
-                {
                  "gid":25,
                  "height":60,
                  "id":42,
@@ -122,6 +90,54 @@
                  "width":70,
                  "x":267,
                  "y":892
+                }, 
+                {
+                 "gid":32,
+                 "height":30,
+                 "id":50,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"crab",
+                 "visible":true,
+                 "width":45,
+                 "x":1368,
+                 "y":925
+                }, 
+                {
+                 "gid":32,
+                 "height":30,
+                 "id":53,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"crab",
+                 "visible":true,
+                 "width":45,
+                 "x":1753,
+                 "y":930
+                }, 
+                {
+                 "gid":32,
+                 "height":30,
+                 "id":56,
+                 "name":"",
+                 "properties":
+                    {
+
+                    },
+                 "rotation":0,
+                 "type":"crab",
+                 "visible":true,
+                 "width":45,
+                 "x":1656,
+                 "y":833
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -141,7 +157,7 @@
          "x":0,
          "y":0
         }],
- "nextobjectid":43,
+ "nextobjectid":58,
  "orientation":"orthogonal",
  "properties":
     {
@@ -204,7 +220,7 @@
          "imageheight":32,
          "imagewidth":32,
          "margin":0,
-         "name":"physics_tiles",
+         "name":"platformTiles",
          "properties":
             {
 
@@ -229,6 +245,22 @@
          "tilecount":7,
          "tileheight":60,
          "tilewidth":70
+        }, 
+        {
+         "firstgid":32,
+         "image":"..\/sprites\/crab.png",
+         "imageheight":60,
+         "imagewidth":90,
+         "margin":0,
+         "name":"crab",
+         "properties":
+            {
+
+            },
+         "spacing":0,
+         "tilecount":4,
+         "tileheight":30,
+         "tilewidth":45
         }],
  "tilewidth":32,
  "version":1,

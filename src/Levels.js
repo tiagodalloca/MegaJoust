@@ -3,18 +3,19 @@
 Joust = Joust || {};
 
 //Demo level
-Joust.levels.demo = function (game) { Joust.levels.currentLevel = this;};
-Joust.levels.demo.prototype = 
+Joust.levels.demo = function (game) { Joust.levels.currentLevel = this; };
+Joust.levels.demo.prototype =
 {
     preload: function ()
     {
-        this.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60);
         this.game.load.tilemap('map', 'assets/tiled_map/tiled_map.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png');
         this.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png');
-        this.game.load.image('physics_tiles', 'assets/tiled_map/physics_tiles.png');
+        this.game.load.image('platformTiles', 'assets/tiled_map/physics_tiles.png');
         this.game.load.image('backtile', 'assets/tiled_map/backtile.png');
-        this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 55, 53);
+        this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 45, 30);
+        this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 55, 48);
+        this.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60);
     },
 
     create: function ()
@@ -27,7 +28,7 @@ Joust.levels.demo.prototype =
         this.map = this.game.add.tilemap('map');
         this.map.addTilesetImage('gray_pltf', 'gray_pltf');
         this.map.addTilesetImage('iced_pltf', 'iced_pltf');
-        this.map.addTilesetImage('physics_tiles', 'physics_tiles');
+        this.map.addTilesetImage('platformTiles', 'platformTiles');
         this.layers = {};
 
         //Background
@@ -41,6 +42,10 @@ Joust.levels.demo.prototype =
         this.layers.colliding_tiles = this.map.createLayer('colliding_tiles');
         this.layers.colliding_tiles.alpha = 0;
         this.map.setCollision(24, true, 'colliding_tiles');
+        //this.game.physics.arcade.enable(this.layers.colliding_tiles);
+        //this.layers.colliding_tiles.body.checkCollision.down = false;
+
+        Joust.utils.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, {top: true, bottom: false, left: false, right: false});
 
         this.layers.platforms.resizeWorld();
 
@@ -61,7 +66,9 @@ Joust.levels.demo.prototype =
         this.sprites.knight = Joust.spawners.knight(this, 'objects')
 
         this.sprites.enemies = {};
-        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight);
+
+        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight, 1.1);
+        this.sprites.enemies.crab = Joust.spawners.crab(this, 'objects', this.sprites.knight, 2);
 
         this.game.camera.follow(this.sprites.knight);
     },
@@ -78,23 +85,6 @@ Joust.levels.demo.prototype =
         {
             this.game.physics.arcade.collide(sprite, this.layers.colliding_tiles);
         }).bind(this));
-
-        //Joust.utils.arrayFromObject(Joust.sprites).forEach(
-        //function (ele, index, arr)
-        //{
-        //    if (ele.constructor != Array)
-        //        Joust.game.physics.arcade.collide(ele, Joust.layers.colliding_tiles);
-        //    else
-        //    {
-        //        ele.forEach(
-        //        function (ele, index, arr)
-        //        {
-        //            Joust.game.physics.arcade.collide(ele, Joust.layers.colliding_tiles);
-        //        });
-        //    }
-        //});
-
-        //Joust.game.physics.arcade.collide(Joust.sprites.knight, Joust.layers.platforms);
 
         this.game.time.events.onUpdate.dispatch();
 
