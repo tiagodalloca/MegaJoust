@@ -11,7 +11,7 @@ Joust.levels.demo.prototype =
         this.game.load.tilemap('map', 'assets/tiled_map/tiled_map.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png');
         this.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png');
-        this.game.load.image('platformTiles', 'assets/tiled_map/physics_tiles.png');
+        this.game.load.image('platformTile', 'assets/tiled_map/platformTile.png');
         this.game.load.image('backtile', 'assets/tiled_map/backtile.png');
         this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 45, 30);
         this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 55, 48);
@@ -28,7 +28,7 @@ Joust.levels.demo.prototype =
         this.map = this.game.add.tilemap('map');
         this.map.addTilesetImage('gray_pltf', 'gray_pltf');
         this.map.addTilesetImage('iced_pltf', 'iced_pltf');
-        this.map.addTilesetImage('platformTiles', 'platformTiles');
+        this.map.addTilesetImage('platformTile', 'platformTile');
         this.layers = {};
 
         //Background
@@ -98,7 +98,7 @@ Joust.levels.demo.prototype =
                     this.game.physics.arcade.collide(this.sprites.knight, sprite,
                     (function ()
                     {
-                        Joust.levels.resetCurrentLevel();
+                        Joust.utils.resetCurrentLevel();
                     }).bind(this));
                 }
             }
@@ -106,4 +106,4 @@ Joust.levels.demo.prototype =
     },
 }
 
-//Joust.utils.forEveryItem(Joust.levels, function (ele, i, arr) { ele.extends(Joust.objectsConstructors.Level) });
+Joust.utils.forEveryItem(Joust.levels, function (ele, i, arr) { Joust.objectsConstructors.Level.call(ele.prototype) });

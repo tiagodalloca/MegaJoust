@@ -41,6 +41,7 @@ var Joust =
             this.scale.x = this.size;
             this.scale.y = this.size;
             this.anchor.x = 0.5;
+            this.anchor.y = 0.5;
             game.add.existing(this);
 
             game.physics.arcade.enable(this);
@@ -234,7 +235,8 @@ var Joust =
             Joust.objectsConstructors.Enemie.call(this, x, y, game, key, arguments[arguments.length - 1]);
 
             this.vel = vel;
-            this.jumpVel = -30 * this.vel;
+            this.jumpVel = -15 * this.vel;
+            this.body.maxVelocity.x = this.vel;
 
             this.animations.add('run', [0, 1, 2, 3], Math.round(Math.random() * 7 + 3), true);
             this.animations.play('run');
@@ -248,10 +250,13 @@ var Joust =
                 if (touchingTheFloor)
                 {
                     if (_this.x > target.x)
-                        _this.body.velocity.add(_this.vel * Math.random() * -1, _this.jumpVel);
+                        _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
 
                     else
-                        _this.body.velocity.add(_this.vel * Math.random(), _this.jumpVel);
+                        _this.body.velocity.add(_this.vel * Math.random(), 0);
+
+                    if (target.y + target.height*target.anchor.y < _this.y + _this.height*_this.anchor.y)
+                        _this.body.velocity.add(0, _this.jumpVel);
                 }
 
                 if (_this.body.velocity.x > 0)
@@ -261,19 +266,15 @@ var Joust =
                     _this.scale.x = Math.abs(_this.scale.x);
             });
 
-        }
+        },
 
         //Not sprites
 
-        //Level: function (preload, create, render, update) //Class that represents a stage or level from the game
-        //{
-
-        //    if (!(this.update || this.render || this.create || this.preload))
-        //        throw new Error("All the game properties must have been settled");
-
-        //    Joust.levels.currentLevel = this;
-        //    this.reset = Joust.reset;
-        //}
+        Level: function () //Class that represents a stage or level from the game
+        {
+            if (!(this.update && this.render && this.create && this.preload))
+                throw new Error("All the game properties must have been settled");
+        }
     },
 
     utils:
@@ -357,7 +358,7 @@ var Joust =
             purple: 0x7500a8
         },
 
-        setCollisionDirectionsFromTiles: function(tilemapLayer, direction)
+        setCollisionDirectionsFromTiles: function (tilemapLayer, direction)
         {
             var clt = tilemapLayer;
 
@@ -369,24 +370,64 @@ var Joust =
                 {
                     if (elem.index != -1)
                     {
-                        elem.collideUp = direction.top;
-                        elem.collideDown = direction.bottom;
-                        elem.collideLeft = direction.left;
-                        elem.collideRight = direction.right;
+                        //elem.rotation = parseInt(elem.properties.rotation);
 
-                        elem.faceTop = direction.top;
-                        elem.faceBottom = direction.bottom;
-                        elem.faceLeft = direction.left;
-                        elem.faceRight = direction.right;
+                        switch (parseInt(elem.properties.rotation))
+                        {
+                            case 0:
+                                elem.collideUp = direction.top;
+                                elem.collideDown = direction.bottom;
+                                elem.collideLeft = direction.left;
+                                elem.collideRight = direction.right;
+
+                                elem.faceTop = direction.top;
+                                elem.faceBottom = direction.bottom;
+                                elem.faceLeft = direction.left;
+                                elem.faceRight = direction.right;
+                                break
+
+                            case 90:
+                                elem.collideUp = direction.left;
+                                elem.collideDown = direction.right;
+                                elem.collideLeft = direction.bottom;
+                                elem.collideRight = direction.top;
+
+                                elem.faceTop = direction.left;
+                                elem.faceBottom = direction.right;
+                                elem.faceLeft = direction.bottom;
+                                elem.faceRight = direction.top;
+                                break
+
+                            case 180:
+                                    elem.collideUp = direction.bottom;
+                                    elem.collideDown = direction.top;
+                                    elem.collideLeft = direction.right;
+                                    elem.collideRight = direction.left;
+
+                                    elem.faceTop = direction.bottom;
+                                    elem.faceBottom = direction.top;
+                                    elem.faceLeft = direction.right;
+                                    elem.faceRight = direction.left;
+                                    break
+
+                            case 270:
+                                    elem.collideUp = direction.right;
+                                    elem.collideDown = direction.left;
+                                    elem.collideLeft = direction.top;
+                                    elem.collideRight = direction.bottom;
+
+                                    elem.faceTop = direction.right;
+                                    elem.faceBottom = direction.left;
+                                    elem.faceLeft = direction.top;
+                                    elem.faceRight = direction.bottom;
+                                    break
+                        }
+
                     }
                 });
             });
-        }
-    },
+        },
 
-    levels:
-    {
-        currentLevel: null,
         resetCurrentLevel: function ()
         {
             Joust.utils.forEveryItem(Joust.levels.currentLevel.sprites,
@@ -398,6 +439,11 @@ var Joust =
             Joust.levels.currentLevel.game.time.events.removeAll();
             Joust.levels.currentLevel.spawnSprites();
         }
+    },
+
+    levels:
+    {
+        currentLevel: null,
     },
 
     spawners:
@@ -430,7 +476,7 @@ var Joust =
             for (var cont = 0; cont < elems.length; cont++)
             {
                 var ele = elems[cont];
-                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 20, target, scale);
+                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 30 + Math.random() * 30, target, scale);
                 elems[cont] = ele;
             }
 
@@ -442,8 +488,6 @@ var Joust =
 //extending(Phaser.Sprite, Joust.objectsConstructors.Knight);
 //extending(Phaser.Sprite, Joust.objectsConstructors.Enemie);
 //extending(Joust.objectsConstructors.Enemie, Joust.objectsConstructors.Spiky);
-
-//Joust.utils.forEveryItem(Joust.levels, function (ele, i, arr) { extending(Joust.objectsConstructors.Level, ele) });
 
 Joust.objectsConstructors.Knight.extends(Phaser.Sprite);
 Joust.objectsConstructors.Enemie.extends(Phaser.Sprite);
