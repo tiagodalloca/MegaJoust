@@ -5,7 +5,12 @@ Function.prototype.extends = function (parent)
 {
     this.prototype = Object.create(parent.prototype);
     this.prototype.constructor = this;
-    this.parent = parent;
+    this.inheritedFrom = parent;
+}
+
+Function.prototype.isMySon = function (son)
+{
+    return son.constructor === this;
 }
 
 const extending = function (sup, sub)
@@ -33,7 +38,7 @@ var Joust =
 
     objectsConstructors:
     {
-        Knight: function (game, x, y, key, vel, size, drag, mass, tint)
+        Knight: function (game, x, y, key, vel, jumpVel,size, drag, mass, tint)
         {
             Phaser.Sprite.call(this, game, x, y, key);
             this.tint = tint;
@@ -44,6 +49,9 @@ var Joust =
             this.anchor.y = 0.5;
             game.add.existing(this);
 
+            this.vel = vel;
+            this.jumpVel = jumpVel;
+
             game.physics.arcade.enable(this);
             this.body.collideWorldBounds = true;
             this.body.width -= this.size * 5;
@@ -52,8 +60,6 @@ var Joust =
             this.body.maxVelocity.x = this.vel;
             this.body.maxVelocity.y = 500;
             this.body.drag.x = drag;
-
-            this.vel = vel;
 
             this.animations.add('run', [1, 2, 3], 20, true);
             this.animations.add('fly', [4, 5], 10, true);
@@ -151,7 +157,7 @@ var Joust =
                     _this.animations.currentAnim.speed = runningFrameSpeed;
                 }
 
-                _this.body.velocity.add(-_this.vel / 30, 0);
+                _this.body.velocity.add(-_this.vel/30, 0);
             }
 
             this.walkToRight = function ()
@@ -170,7 +176,7 @@ var Joust =
             this.fly = function ()
             {
                 _this.play('fly');
-                _body.velocity.add(0, -_this.vel * 2);
+                _body.velocity.add(0, -_this.jumpVel);
             }
 
             this.events.onDestroy.add(
@@ -255,7 +261,7 @@ var Joust =
                     else
                         _this.body.velocity.add(_this.vel * Math.random(), 0);
 
-                    if (target.y + target.height*target.anchor.y < _this.y + _this.height*_this.anchor.y)
+                    if (target.y + target.height * target.anchor.y < _this.y + _this.height * _this.anchor.y)
                         _this.body.velocity.add(0, _this.jumpVel);
                 }
 
@@ -279,42 +285,6 @@ var Joust =
 
     utils:
     {
-        createSpriteByType: function (arrObjs, type, stringCacheTexture, frame, game)
-        {
-            var sprites = [];
-
-            for (var cont = 0; cont < arrObjs.length; cont++)
-            {
-                if (arrObjs[cont].type === type)
-                {
-                    var asd = new Phaser.Sprite(game, arrObjs[cont].x, arrObjs[cont].y - 50, stringCacheTexture, frame);
-                    game.add.existing(asd);
-                    sprites.push(asd);
-                }
-            }
-
-            return sprites
-        },
-
-        createSpriteProtoByType: function (arrObjs, type)
-        {
-            var sprites = [];
-
-            for (var cont = 0; cont < arrObjs.length; cont++)
-            {
-                if (arrObjs[cont].type === type)
-                {
-                    var asd = {};
-                    asd.x = arrObjs[cont].x;
-                    asd.y = arrObjs[cont].y - 40;
-                    //Other properties might be added
-                    sprites.push(asd);
-                }
-            }
-
-            return sprites
-        },
-
         arrayFromObject: function (obj)
         {
             return Object.keys(obj).map(function (key) { return obj[key] });
@@ -358,86 +328,160 @@ var Joust =
             purple: 0x7500a8
         },
 
-        setCollisionDirectionsFromTiles: function (tilemapLayer, direction)
+        throwAnErrorIfItsNotALevel : function(thing)
         {
-            var clt = tilemapLayer;
+            if (Joust.objectsConstructors.Level.isMySon(thing))
+                return true;
 
-            clt.map.layers[clt.index].data.forEach(
-            function (elem, i, arr)
+            else
             {
-                elem.forEach(
-                function (elem, i, arr)
-                {
-                    if (elem.index != -1)
-                    {
-                        //elem.rotation = parseInt(elem.properties.rotation);
-
-                        switch (parseInt(elem.properties.rotation))
-                        {
-                            case 0:
-                                elem.collideUp = direction.top;
-                                elem.collideDown = direction.bottom;
-                                elem.collideLeft = direction.left;
-                                elem.collideRight = direction.right;
-
-                                elem.faceTop = direction.top;
-                                elem.faceBottom = direction.bottom;
-                                elem.faceLeft = direction.left;
-                                elem.faceRight = direction.right;
-                                break
-
-                            case 90:
-                                elem.collideUp = direction.left;
-                                elem.collideDown = direction.right;
-                                elem.collideLeft = direction.bottom;
-                                elem.collideRight = direction.top;
-
-                                elem.faceTop = direction.left;
-                                elem.faceBottom = direction.right;
-                                elem.faceLeft = direction.bottom;
-                                elem.faceRight = direction.top;
-                                break
-
-                            case 180:
-                                    elem.collideUp = direction.bottom;
-                                    elem.collideDown = direction.top;
-                                    elem.collideLeft = direction.right;
-                                    elem.collideRight = direction.left;
-
-                                    elem.faceTop = direction.bottom;
-                                    elem.faceBottom = direction.top;
-                                    elem.faceLeft = direction.right;
-                                    elem.faceRight = direction.left;
-                                    break
-
-                            case 270:
-                                    elem.collideUp = direction.right;
-                                    elem.collideDown = direction.left;
-                                    elem.collideLeft = direction.top;
-                                    elem.collideRight = direction.bottom;
-
-                                    elem.faceTop = direction.right;
-                                    elem.faceBottom = direction.left;
-                                    elem.faceLeft = direction.top;
-                                    elem.faceRight = direction.bottom;
-                                    break
-                        }
-
-                    }
-                });
-            });
+                throw new Error("This thing its not a Level");
+            }
         },
 
-        resetCurrentLevel: function ()
+        levelConfigurationFunctions:
         {
-            Joust.utils.forEveryItem(Joust.levels.currentLevel.sprites,
-            function (sprite)
+            setCollisionDirectionsFromTiles: function (tilemapLayer)
             {
-                sprite.destroy();
-            });
-            Joust.levels.currentLevel.game.time.events.onUpdate.removeAll();
-            Joust.levels.currentLevel.game.time.events.removeAll();
-            Joust.levels.currentLevel.spawnSprites();
+                var clt = tilemapLayer;
+
+                clt.map.layers[clt.index].data.forEach(
+                function (elem, i, arr)
+                {
+                    elem.forEach(
+                    function (elem, i, arr)
+                    {
+                        if (elem.index != -1)
+                        {
+                            elem.collideUp = stringToBoolean(elem.properties.top);
+                            elem.collideDown = stringToBoolean(elem.properties.bottom);
+                            elem.collideLeft = stringToBoolean(elem.properties.left);
+                            elem.collideRight = stringToBoolean(elem.properties.right);
+
+                            elem.faceTop = stringToBoolean(elem.properties.top)
+                            elem.faceBottom = stringToBoolean(elem.properties.bottom);
+                            elem.faceLeft = stringToBoolean(elem.properties.left);
+                            elem.faceRight = stringToBoolean(elem.properties.right);
+                        }
+                    });
+
+                    function stringToBoolean(string)
+                    {
+                        switch (string.toLowerCase().trim())
+                        {
+                            case "true": case "yes": case "1": return true;
+                            case "false": case "no": case "0": case null: return false;
+                            default: return Boolean(string);
+                        }
+                    }
+                });
+            },
+
+            createSpriteByType: function (arrObjs, type, stringCacheTexture, frame, game)
+            {
+                var sprites = [];
+
+                for (var cont = 0; cont < arrObjs.length; cont++)
+                {
+                    if (arrObjs[cont].type === type)
+                    {
+                        var asd = new Phaser.Sprite(game, arrObjs[cont].x, arrObjs[cont].y - 50, stringCacheTexture, frame);
+                        game.add.existing(asd);
+                        sprites.push(asd);
+                    }
+                }
+
+                return sprites
+            },
+
+            createSpriteProtoByType: function (arrObjs, type)
+            {
+                var sprites = [];
+
+                for (var cont = 0; cont < arrObjs.length; cont++)
+                {
+                    if (arrObjs[cont].type === type)
+                    {
+                        var asd = {};
+                        asd.x = arrObjs[cont].x;
+                        asd.y = arrObjs[cont].y - 40;
+                        //Other properties might be added
+                        sprites.push(asd);
+                    }
+                }
+
+                return sprites
+            },
+
+            configureBackground: function (level)
+            {
+                if (Joust.utils.throwAnErrorIfItsNotALevel(level))
+                {
+                    var backW = level.game.cache.getImage('backtile').width;
+                    var backH = level.game.cache.getImage('backtile').height
+
+                    for (var i = 0; i * backW < level.map.widthInPixels; i++)
+                        level.game.add.tileSprite(i * backW, -100, backW, backH, 'backtile');
+                }
+            }
+
+        },
+
+        levelBehaviorFunctions:
+        {
+            collideSpritesWithCollisionTiles: function (level)
+            {
+                if (Joust.utils.throwAnErrorIfItsNotALevel(level))
+                {
+                    Joust.utils.forEveryItem(level.sprites,
+                    (function (sprite)
+                    {
+                        level.game.physics.arcade.collide(sprite, level.layers.colliding_tiles);
+                    }));
+                }
+            },
+
+            isTheKnightTouchingAnEnemie: function (level)
+            {
+                if (Joust.utils.throwAnErrorIfItsNotALevel(level))
+                {
+                    var boo = false
+
+                    Joust.utils.forEveryItem(level.sprites,
+                    (function (sprite)
+                    {
+                        if (sprite != level.sprites.knight)
+                        {
+                            if (sprite.__proto__.constructor.inheritedFrom == Joust.objectsConstructors.Enemie)
+                            {
+                                level.game.physics.arcade.collide(level.sprites.knight, sprite,
+                                (function ()
+                                {
+                                    boo = true;
+                                }));
+                            }
+                        }
+                    }));
+
+                    return boo;
+                }
+            },
+
+            resetLevel: function (level)
+            {
+                if (Joust.utils.throwAnErrorIfItsNotALevel(level))
+                {
+                    Joust.utils.forEveryItem(level.sprites,
+                    function (sprite)
+                    {
+                        sprite.destroy();
+                    });
+
+                    level.game.time.events.onUpdate.removeAll();
+                    level.game.time.events.removeAll();
+                    level.spawnSprites();
+                }
+            },
         }
     },
 
@@ -450,14 +494,14 @@ var Joust =
     {
         knight: function (level, objectLayerName)
         {
-            var kn = (Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'knight'))[0];
-            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 'knight', 250, 1, 300, 100, Joust.utils.colors.blue);
+            var kn = (Joust.utils.levelConfigurationFunctions.createSpriteProtoByType(level.map.objects[objectLayerName], 'knight'))[0];
+            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 'knight', 500, 500, 1, 500, 100, Joust.utils.colors.blue);
             return knight;
         },
 
         spiky: function (level, objectLayerName, target, scale)
         {
-            var elems = Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'spiky');
+            var elems = Joust.utils.levelConfigurationFunctions.createSpriteProtoByType(level.map.objects[objectLayerName], 'spiky');
 
             for (var cont = 0; cont < elems.length; cont++)
             {
@@ -471,7 +515,7 @@ var Joust =
 
         crab: function (level, objectLayerName, target, scale)
         {
-            var elems = Joust.utils.createSpriteProtoByType(level.map.objects[objectLayerName], 'crab');
+            var elems = Joust.utils.levelConfigurationFunctions.createSpriteProtoByType(level.map.objects[objectLayerName], 'crab');
 
             for (var cont = 0; cont < elems.length; cont++)
             {
@@ -484,10 +528,6 @@ var Joust =
         }
     }
 };
-
-//extending(Phaser.Sprite, Joust.objectsConstructors.Knight);
-//extending(Phaser.Sprite, Joust.objectsConstructors.Enemie);
-//extending(Joust.objectsConstructors.Enemie, Joust.objectsConstructors.Spiky);
 
 Joust.objectsConstructors.Knight.extends(Phaser.Sprite);
 Joust.objectsConstructors.Enemie.extends(Phaser.Sprite);

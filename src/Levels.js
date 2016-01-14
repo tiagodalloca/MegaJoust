@@ -24,7 +24,6 @@ Joust.levels.demo.prototype =
         this.game.world.setBounds(0, 0, this.game.width, this.game.height);
 
         //Tiled Map
-
         this.map = this.game.add.tilemap('map');
         this.map.addTilesetImage('gray_pltf', 'gray_pltf');
         this.map.addTilesetImage('iced_pltf', 'iced_pltf');
@@ -32,22 +31,18 @@ Joust.levels.demo.prototype =
         this.layers = {};
 
         //Background
+        Joust.utils.levelConfigurationFunctions.configureBackground(this);
 
-        var backW = this.game.cache.getImage('backtile').width;
-
-        for (var i = 0; i * backW < this.map.widthInPixels; i++)
-            this.game.add.tileSprite(i * backW, -100, 1473, 1249, 'backtile');
-
+        //Visible platforms and invisible collision tiles
         this.layers.platforms = this.map.createLayer('platforms');
         this.layers.colliding_tiles = this.map.createLayer('colliding_tiles');
         this.layers.colliding_tiles.alpha = 0;
         this.map.setCollision(24, true, 'colliding_tiles');
-        //this.game.physics.arcade.enable(this.layers.colliding_tiles);
-        //this.layers.colliding_tiles.body.checkCollision.down = false;
-
-        Joust.utils.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, {top: true, bottom: false, left: false, right: false});
+        Joust.utils.levelConfigurationFunctions.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, {top: true, bottom: false, left: false, right: false});
 
         this.layers.platforms.resizeWorld();
+
+        //Configuring arcade physics world
 
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
         this.game.physics.arcade.setBoundsToWorld();
@@ -55,14 +50,19 @@ Joust.levels.demo.prototype =
         this.game.stage.backgroundColor = "rgb(255,255,255)";
         this.game.physics.arcade.gravity.y = 1200;
 
+        //Alert all the objects when the game updates
+        this.game.time.events.onUpdate = new Phaser.Signal(); 
 
-        this.game.time.events.onUpdate = new Phaser.Signal();
+        //Spawning sprites
+
         this.sprites = {};
         this.spawnSprites();
     },
 
     spawnSprites: function ()
     {
+        //Sprites spawnig
+
         this.sprites.knight = Joust.spawners.knight(this, 'objects')
 
         this.sprites.enemies = {};
@@ -80,30 +80,24 @@ Joust.levels.demo.prototype =
 
     update: function ()
     {
-        Joust.utils.forEveryItem(this.sprites,
-        (function (sprite)
-        {
-            this.game.physics.arcade.collide(sprite, this.layers.colliding_tiles);
-        }).bind(this));
+        //Collides "physics" tiles with all the sprites
+        Joust.utils.levelBehaviorFunctions.collideSpritesWithCollisionTiles(this);
 
+        //If the knight is touching an enemie, the level is reseted
+        if (Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAnEnemie(this))
+            Joust.utils.levelBehaviorFunctions.resetLevel(this);
+
+        //Dispatch the update event, so the sprites are updated
+        //(Take a look at each objectConstructors' functions for better comprehension)
         this.game.time.events.onUpdate.dispatch();
 
-        Joust.utils.forEveryItem(this.sprites,
-        (function (sprite)
-        {
-            if (sprite != this.sprites.knight)
-            {
-                if (sprite.__proto__.__proto__ == Joust.objectsConstructors.Enemie.prototype)
-                {
-                    this.game.physics.arcade.collide(this.sprites.knight, sprite,
-                    (function ()
-                    {
-                        Joust.utils.resetCurrentLevel();
-                    }).bind(this));
-                }
-            }
-        }).bind(this));
+        
     },
 }
 
-Joust.utils.forEveryItem(Joust.levels, function (ele, i, arr) { Joust.objectsConstructors.Level.call(ele.prototype) });
+Joust.utils.forEveryItem(Joust.levels,
+    function (elem)
+    {
+        Joust.objectsConstructors.Level.call(elem.prototype);
+        elem.prototype.constructor = Joust.objectsConstructors.Level;
+    });
