@@ -13,9 +13,11 @@ Joust.levels.demo.prototype =
         this.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png');
         this.game.load.image('platformTile', 'assets/tiled_map/platformTile.png');
         this.game.load.image('backtile', 'assets/tiled_map/backtile.png');
+        this.game.load.spritesheet('flag', 'assets/sprites/flag.png', 45, 66);
         this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 45, 30);
         this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 55, 48);
         this.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60);
+        this.game.load.image('knightParticle', 'assets/sprites/knightParticle.png');
     },
 
     create: function ()
@@ -50,6 +52,10 @@ Joust.levels.demo.prototype =
         this.game.stage.backgroundColor = "rgb(255,255,255)";
         this.game.physics.arcade.gravity.y = 1200;
 
+        this.emitter = this.game.add.emitter(0, 0, 200);
+        this.emitter.makeParticles('knightParticle');
+        this.emitter.rotation = 0;
+
         //Alert all the objects when the game updates
         this.game.time.events.onUpdate = new Phaser.Signal(); 
 
@@ -63,7 +69,10 @@ Joust.levels.demo.prototype =
     {
         //Sprites spawnig
 
-        this.sprites.knight = Joust.spawners.knight(this, 'objects')
+        Joust.utils.levelConfigurationFunctions.tileHeightCorrection = -32;
+
+        this.sprites.knight = Joust.spawners.knight(this, 'objects', Joust.utils.colors.yeallow);
+        this.sprites.flag = Joust.spawners.flag(this, 'objects');
 
         this.sprites.enemies = {};
 
@@ -84,14 +93,20 @@ Joust.levels.demo.prototype =
         Joust.utils.levelBehaviorFunctions.collideSpritesWithCollisionTiles(this);
 
         //If the knight is touching an enemie, the level is reseted
-        if (Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAnEnemie(this))
-            Joust.utils.levelBehaviorFunctions.resetLevel(this);
+        var deadKnight = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAnEnemie(this)
+        if (deadKnight && !this.emitter.started)
+        {
+            deadKnight.desintegrate(this.emitter);
+        }
+
+        //If the knight is touching a flag, we play flag's loop animation
+        var flag = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAFlag(this);
+        if (flag)
+            flag.playLoop();
 
         //Dispatch the update event, so the sprites are updated
         //(Take a look at each objectConstructors' functions for better comprehension)
         this.game.time.events.onUpdate.dispatch();
-
-        
     },
 }
 

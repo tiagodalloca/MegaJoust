@@ -38,7 +38,7 @@ var Joust =
 
     objectsConstructors:
     {
-        Knight: function (game, x, y, key, vel, jumpVel,size, drag, mass, tint)
+        Knight: function (game, x, y, key, vel, jumpVel, size, drag, mass, tint)
         {
             Phaser.Sprite.call(this, game, x, y, key);
             this.tint = tint;
@@ -49,6 +49,7 @@ var Joust =
             this.anchor.y = 0.5;
             game.add.existing(this);
 
+            this.drag = drag;
             this.vel = vel;
             this.jumpVel = jumpVel;
 
@@ -60,27 +61,18 @@ var Joust =
             this.body.maxVelocity.x = this.vel;
             this.body.maxVelocity.y = 500;
             this.body.drag.x = drag;
+            this.body.allowRotation = false;
 
             this.animations.add('run', [1, 2, 3], 20, true);
             this.animations.add('fly', [4, 5], 10, true);
 
-            var _this = this;
-            _body = this.body;
             var touchingTheFloor, runningFrameSpeed;
             var holdUpdates = 0;
 
-            game.input.keyboard.addKey(Phaser.Keyboard.UP).onUp.add(
-            function ()
-            {
-                if (_this.nFlights < 3)
-                {
-                    _this.fly();
-                    _this.nFlights++;
-                }
-            });
+            var _this = this;
+            _body = this.body;
 
-            game.time.events.onUpdate.add(
-            function ()
+            this._updateFunction = function ()
             {
                 touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
                 runningFrameSpeed = Math.round(Math.abs(_this.body.velocity.x) / 20);
@@ -145,7 +137,18 @@ var Joust =
                     _this.animations.play('fly');
                     _this.body.drag.x = 0;
                 }
-            });
+            };
+            this._onUpArrowUp = function ()
+            {
+                if (_this.nFlights < 3)
+                {
+                    _this.fly();
+                    _this.nFlights++;
+                }
+            };
+
+            game.input.keyboard.addKey(Phaser.Keyboard.UP).onUp.add(this._onUpArrowUp);
+            game.time.events.onUpdate.add(this._updateFunction);
 
             this.walkToLeft = function ()
             {
@@ -157,7 +160,7 @@ var Joust =
                     _this.animations.currentAnim.speed = runningFrameSpeed;
                 }
 
-                _this.body.velocity.add(-_this.vel/30, 0);
+                _this.body.velocity.add(-_this.vel / 30, 0);
             }
 
             this.walkToRight = function ()
@@ -176,14 +179,39 @@ var Joust =
             this.fly = function ()
             {
                 _this.play('fly');
-                _body.velocity.add(0, -_this.jumpVel);
+                _body.velocity.set(_body.velocity.x, -_this.jumpVel);
             }
 
             this.events.onDestroy.add(
             function ()
             {
-                delete (_this);
+                game.time.events.onUpdate.remove(_this._updateFunction);
+                game.input.keyboard.addKey(Phaser.Keyboard.UP).onUp.remove(_this._onUpArrowUp);
             });
+
+            this.desintegrate = function (particleEmitter)
+            {
+                particleEmitter.x = this.x - this.width / 2;
+                particleEmitter.y = this.y;
+                particleEmitter.setXSpeed(-10, this.body.velocity.x * 1.5);
+                particleEmitter.setYSpeed(this.body.velocity.y / 2, this.body.velocity.y - this.jumpVel / 1.3);
+                particleEmitter.setScale(0.1, 0, 0.1, 0, 4000);
+                particleEmitter.height = Math.abs(this.height) / 2;
+                particleEmitter.width = Math.abs(this.width);
+                particleEmitter.gravity = 0;
+                particleEmitter.start(true, 4000, null, 200); //explode particles and let them 'living' for 4s
+                particleEmitter.forEach(
+                function (child)
+                {
+                    child.tint = this.tint;
+                    child.rotation = (Math.round(Math.random() * 4) * 90) * Math.PI / 180;
+                    child.body.allowRotation = false;
+                    child.body.drag.x = this.drag;
+                }, this);
+
+                particleEmitter.started = true;
+                this.destroy();
+            };
         },
 
         Enemie: function (x, y, game, key) //Abstract class
@@ -195,6 +223,7 @@ var Joust =
             game.add.existing(this);
             this.game.physics.arcade.enable(this);
             this.body.collideWorldBounds = true;
+            this.body.allowRotation = false;
 
             this.anchor.x = 0.5;
             this.anchor.y = 0.5;
@@ -215,8 +244,7 @@ var Joust =
 
             var _this = this;
 
-            this.game.time.events.onUpdate.add(
-            function ()
+            this._onUpdateFunction = function ()
             {
                 if (_this.body.velocity.x == 0 && Math.abs(_this.x - target.x) < 800)
                 {
@@ -232,8 +260,15 @@ var Joust =
 
                 else
                     _this.scale.x = Math.abs(_this.scale.x);
-            });
 
+            };
+            game.time.events.onUpdate.add(this._onUpdateFunction);
+
+            target.events.onDestroy.add(
+            function ()
+            {
+                _this.game.time.events.onUpdate.remove(_this._onUpdateFunction);
+            });
         },
 
         Crab: function (x, y, game, key, vel, target)
@@ -248,20 +283,31 @@ var Joust =
             this.animations.play('run');
             var _this = this;
 
-            this.game.time.events.onUpdate.add(
-            function ()
+            this._onUpdateFunction = function ()
             {
                 var touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
 
                 if (touchingTheFloor)
                 {
-                    if (_this.x > target.x)
-                        _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
+                    if (Math.abs(_this.x - target.x) < 300)
+                    {
+                        if (Math.abs(_this.x - target.x) > 10)
+                        {
+                            if (_this.x > target.x)
+                                _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
 
-                    else
-                        _this.body.velocity.add(_this.vel * Math.random(), 0);
+                            else
+                                _this.body.velocity.add(_this.vel * Math.random(), 0);
+                        }
 
-                    if (target.y + target.height * target.anchor.y < _this.y + _this.height * _this.anchor.y)
+                        else
+                        {
+                            _this.body.velocity.x = 0;
+                        }
+                    }
+
+                    if (target.y + target.height * target.anchor.y < _this.y + _this.height * _this.anchor.y
+                        && Math.abs(_this.x - target.x) < 100)
                         _this.body.velocity.add(0, _this.jumpVel);
                 }
 
@@ -270,9 +316,48 @@ var Joust =
 
                 else
                     _this.scale.x = Math.abs(_this.scale.x);
+
+            };
+            this.game.time.events.onUpdate.add(this._onUpdateFunction);
+
+            target.events.onDestroy.add(
+            function ()
+            {
+                _this.game.time.events.onUpdate.remove(_this._onUpdateFunction);
+                _this.body.velocity.x = 0;
             });
 
         },
+
+        Flag: function (x, y, game, key) //Not "animated"
+        {
+            Phaser.Sprite.call(this, game, x, y, key, 1);
+            game.add.existing(this);
+
+            this.game.physics.arcade.enable(this);
+            this.body.collideWorldBounds = true;
+
+            this.anchor.x = 0.5;
+            this.anchor.y = 0.5;
+
+            this.animations.add('looping', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], 60, true);
+
+            var _this = this;
+
+            this.playLoop = function ()
+            {
+                _this.animations.play('looping').onLoop.add(
+                function ()
+                {
+                    if (_this.animations.currentAnim.loopCount == 2)
+                    {
+                        _this.animations.currentAnim.stop();
+                        _this.animations.frame = 0;
+                    }
+                });
+            }
+        },
+
 
         //Not sprites
 
@@ -317,7 +402,7 @@ var Joust =
 
         colors:
         {
-            red: 0xe35e4d,
+            red: 0xdb1100,
             lightred: 0xff5a5a,
             yeallow: 0xffce00,
             orange: 0xffa500,
@@ -328,7 +413,7 @@ var Joust =
             purple: 0x7500a8
         },
 
-        throwAnErrorIfItsNotALevel : function(thing)
+        throwAnErrorIfItsNotALevel: function (thing)
         {
             if (Joust.objectsConstructors.Level.isMySon(thing))
                 return true;
@@ -398,13 +483,22 @@ var Joust =
             {
                 var sprites = [];
 
+                //Sometimes, the position of the sprites are not correct
+                //and normally are different by a 'tile'
+
+                if (!this.tileHeightCorrection)
+                    this.tileHeightCorrection = 0; //function's property
+
+                if (!this.tileWidthCorrection)
+                    this.tileWidthCorrection = 0;
+
                 for (var cont = 0; cont < arrObjs.length; cont++)
                 {
                     if (arrObjs[cont].type === type)
                     {
                         var asd = {};
-                        asd.x = arrObjs[cont].x;
-                        asd.y = arrObjs[cont].y - 40;
+                        asd.x = arrObjs[cont].x + this.tileWidthCorrection;
+                        asd.y = arrObjs[cont].y + this.tileHeightCorrection;
                         //Other properties might be added
                         sprites.push(asd);
                     }
@@ -438,6 +532,8 @@ var Joust =
                     {
                         level.game.physics.arcade.collide(sprite, level.layers.colliding_tiles);
                     }));
+
+                    level.game.physics.arcade.collide(level.emitter, level.layers.colliding_tiles);
                 }
             },
 
@@ -454,17 +550,34 @@ var Joust =
                         {
                             if (sprite.__proto__.constructor.inheritedFrom == Joust.objectsConstructors.Enemie)
                             {
-                                level.game.physics.arcade.collide(level.sprites.knight, sprite,
-                                (function ()
+                                level.game.physics.arcade.overlap(level.sprites.knight, sprite,
+                                function ()
                                 {
-                                    boo = true;
-                                }));
+                                    boo = level.sprites.knight;
+                                });
                             }
                         }
                     }));
 
                     return boo;
                 }
+            },
+
+            isTheKnightTouchingAFlag: function (level)
+            {
+                var boo = false;
+
+                Joust.utils.forEveryItem(level.sprites.flag,
+                (function (flag)
+                {
+                    level.game.physics.arcade.overlap(level.sprites.knight, flag,
+                    function ()
+                    {
+                        boo = flag;
+                    });
+                }));
+
+                return boo;
             },
 
             resetLevel: function (level)
@@ -492,10 +605,10 @@ var Joust =
 
     spawners:
     {
-        knight: function (level, objectLayerName)
+        knight: function (level, objectLayerName, color)
         {
             var kn = (Joust.utils.levelConfigurationFunctions.createSpriteProtoByType(level.map.objects[objectLayerName], 'knight'))[0];
-            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 'knight', 500, 500, 1, 500, 100, Joust.utils.colors.blue);
+            var knight = new Joust.objectsConstructors.Knight(level.game, kn.x, kn.y, 'knight', 500, 500, 1, 500, 100, color);
             return knight;
         },
 
@@ -520,7 +633,21 @@ var Joust =
             for (var cont = 0; cont < elems.length; cont++)
             {
                 var ele = elems[cont];
-                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 30 + Math.random() * 30, target, scale);
+                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 50 + Math.random() * 10, target, scale);
+                elems[cont] = ele;
+            }
+
+            return elems;
+        },
+
+        flag: function (level, objectLayerName, scale)
+        {
+            var elems = Joust.utils.levelConfigurationFunctions.createSpriteProtoByType(level.map.objects[objectLayerName], 'flag');
+
+            for (var cont = 0; cont < elems.length; cont++)
+            {
+                var ele = elems[cont];
+                ele = new Joust.objectsConstructors.Flag(ele.x, ele.y, level.game, 'flag');
                 elems[cont] = ele;
             }
 
@@ -533,3 +660,4 @@ Joust.objectsConstructors.Knight.extends(Phaser.Sprite);
 Joust.objectsConstructors.Enemie.extends(Phaser.Sprite);
 Joust.objectsConstructors.Spiky.extends(Joust.objectsConstructors.Enemie);
 Joust.objectsConstructors.Crab.extends(Joust.objectsConstructors.Enemie);
+Joust.objectsConstructors.Flag.extends(Phaser.Sprite);
