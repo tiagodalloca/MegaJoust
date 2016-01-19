@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="40" tilewidth="32" tileheight="32" nextobjectid="68">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="40" tilewidth="32" tileheight="32" nextobjectid="70">
  <tileset firstgid="1" name="spiky" tilewidth="55" tileheight="53" tilecount="5">
   <image source="../sprites/spiky.png" width="328" height="55"/>
  </tileset>
@@ -108,12 +108,12 @@
  <objectgroup name="objects">
   <object id="24" type="spiky" gid="1" x="192" y="1120" width="55" height="53"/>
   <object id="35" type="spiky" gid="1" x="800" y="1120" width="55" height="53"/>
-  <object id="36" type="spiky" gid="1" x="416" y="896" width="55" height="53"/>
   <object id="42" name="Knight1" type="knight" gid="24" x="224" y="896" width="70" height="60"/>
-  <object id="50" type="crab" gid="31" x="1344" y="928" width="45" height="30"/>
   <object id="53" type="crab" gid="31" x="1710.79" y="1021" width="45" height="30"/>
-  <object id="62" type="flag" gid="41" x="2944" y="1120" width="45" height="66"/>
+  <object id="62" type="flag" gid="41" x="2362.18" y="1123.03" width="45" height="66"/>
   <object id="67" type="crab" gid="31" x="1892.65" y="697.121" width="45" height="30"/>
+  <object id="68" type="flag" gid="41" x="960" y="1024" width="45" height="66"/>
+  <object id="69" type="flag" gid="41" x="1536" y="704" width="45" height="66"/>
  </objectgroup>
  <layer name="colliding_tiles" width="100" height="40" opacity="0.59">
   <data encoding="csv">

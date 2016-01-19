@@ -40,7 +40,7 @@ Joust.levels.demo.prototype =
         this.layers.colliding_tiles = this.map.createLayer('colliding_tiles');
         this.layers.colliding_tiles.alpha = 0;
         this.map.setCollision(24, true, 'colliding_tiles');
-        Joust.utils.levelConfigurationFunctions.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, {top: true, bottom: false, left: false, right: false});
+        Joust.utils.levelConfigurationFunctions.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, { top: true, bottom: false, left: false, right: false });
 
         this.layers.platforms.resizeWorld();
 
@@ -52,12 +52,12 @@ Joust.levels.demo.prototype =
         this.game.stage.backgroundColor = "rgb(255,255,255)";
         this.game.physics.arcade.gravity.y = 1200;
 
-        this.emitter = this.game.add.emitter(0, 0, 200);
+        this.emitter = this.game.add.emitter(0, 0, 10000);
         this.emitter.makeParticles('knightParticle');
         this.emitter.rotation = 0;
 
         //Alert all the objects when the game updates
-        this.game.time.events.onUpdate = new Phaser.Signal(); 
+        this.game.time.events.onUpdate = new Phaser.Signal();
 
         //Spawning sprites
 
@@ -94,15 +94,18 @@ Joust.levels.demo.prototype =
 
         //If the knight is touching an enemie, the level is reseted
         var deadKnight = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAnEnemie(this)
-        if (deadKnight && !this.emitter.started)
+        if (deadKnight && deadKnight.invenciblePoints == 0)
         {
-            deadKnight.desintegrate(this.emitter);
+            Joust.utils.levelBehaviorFunctions.killKnight(this, deadKnight);
         }
 
         //If the knight is touching a flag, we play flag's loop animation
         var flag = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAFlag(this);
         if (flag)
+        {
+            this.sprites.knight.spawnPoint.set(flag.x, flag.y);
             flag.playLoop();
+        }
 
         //Dispatch the update event, so the sprites are updated
         //(Take a look at each objectConstructors' functions for better comprehension)

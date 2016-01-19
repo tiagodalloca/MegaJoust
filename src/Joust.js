@@ -17,7 +17,7 @@ const extending = function (sup, sub)
 {
     sub.prototype = Object.create(sup.prototype);
     sub.prototype.constructor = sub;
-    sub.parent = sup;
+    sub.inheritedFrom = sup;
 };
 
 var Joust =
@@ -47,7 +47,11 @@ var Joust =
             this.scale.y = this.size;
             this.anchor.x = 0.5;
             this.anchor.y = 0.5;
+            this.invenciblePoints = 100;
+            this.alpha = 0.5;
             game.add.existing(this);
+
+            this.spawnPoint = new Phaser.Point(x, y);
 
             this.drag = drag;
             this.vel = vel;
@@ -74,73 +78,84 @@ var Joust =
 
             this._updateFunction = function ()
             {
-                touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
-                runningFrameSpeed = Math.round(Math.abs(_this.body.velocity.x) / 20);
-
-                if (touchingTheFloor)
-                    _this.nFlights = 0;
-
-                if (runningFrameSpeed < 5)
-                    runningFrameSpeed = 5;
-
-                if (game.input.pointer2.isDown)
+                if (_this.alive)
                 {
-                    if (holdUpdates == 0)
-                        _this.fly();
+                    touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
+                    runningFrameSpeed = Math.round(Math.abs(_this.body.velocity.x) / 20);
 
-                    holdUpdates++;
-                }
+                    if (touchingTheFloor)
+                        _this.nFlights = 0;
 
-                else
-                {
-                    holdUpdates = 0;
-                }
+                    if (runningFrameSpeed < 5)
+                        runningFrameSpeed = 5;
 
-                if (game.input.pointer1.isDown)
-                {
-                    if (game.input.pointer1.screenX > game.width / 2)
-                        _this.walkToRight();
-
-                    if (game.input.pointer1.screenX < game.width / 2)
-                        _this.walkToLeft();
-                }
-
-                else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
-                {
-                    _this.walkToRight();
-                }
-
-                else if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
-                {
-                    _this.walkToLeft();
-                }
-
-                else if (touchingTheFloor)
-                {
-                    _this.body.drag.x = drag;
-
-                    if (_this.body.velocity.x != 0)
+                    if (game.input.pointer2.isDown)
                     {
-                        _this.animations.stop();
-                        _this.animations.frame = 6;
+                        if (holdUpdates == 0)
+                            _this.fly();
+
+                        holdUpdates++;
                     }
 
                     else
                     {
-                        _this.animations.stop();
-                        _this.animations.frame = 0;
+                        holdUpdates = 0;
+                    }
+
+                    if (game.input.pointer1.isDown)
+                    {
+                        if (game.input.pointer1.screenX > game.width / 2)
+                            _this.walkToRight();
+
+                        if (game.input.pointer1.screenX < game.width / 2)
+                            _this.walkToLeft();
+                    }
+
+                    else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
+                    {
+                        _this.walkToRight();
+                    }
+
+                    else if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
+                    {
+                        _this.walkToLeft();
+                    }
+
+                    else if (touchingTheFloor)
+                    {
+                        _this.body.drag.x = drag;
+
+                        if (_this.body.velocity.x != 0)
+                        {
+                            _this.animations.stop();
+                            _this.animations.frame = 6;
+                        }
+
+                        else
+                        {
+                            _this.animations.stop();
+                            _this.animations.frame = 0;
+                        }
+                    }
+
+                    else
+                    {
+                        _this.animations.play('fly');
+                        _this.body.drag.x = 0;
                     }
                 }
 
-                else
+                if (_this.invenciblePoints != 0)
                 {
-                    _this.animations.play('fly');
-                    _this.body.drag.x = 0;
+                    _this.invenciblePoints--;
+
+                    if (_this.invenciblePoints == 0)
+                        _this.alpha = 1;
                 }
             };
             this._onUpArrowUp = function ()
             {
-                if (_this.nFlights < 3)
+                if (_this.nFlights < 3 && _this.alive)
                 {
                     _this.fly();
                     _this.nFlights++;
@@ -180,26 +195,19 @@ var Joust =
             {
                 _this.play('fly');
                 _body.velocity.set(_body.velocity.x, -_this.jumpVel);
-            }
-
-            this.events.onDestroy.add(
-            function ()
-            {
-                game.time.events.onUpdate.remove(_this._updateFunction);
-                game.input.keyboard.addKey(Phaser.Keyboard.UP).onUp.remove(_this._onUpArrowUp);
-            });
+            };
 
             this.desintegrate = function (particleEmitter)
             {
                 particleEmitter.x = this.x - this.width / 2;
                 particleEmitter.y = this.y;
-                particleEmitter.setXSpeed(-10, this.body.velocity.x * 1.5);
+                particleEmitter.setXSpeed(-this.vel / 2 + this.body.velocity.x, this.body.velocity.x + this.vel / 2);
                 particleEmitter.setYSpeed(this.body.velocity.y / 2, this.body.velocity.y - this.jumpVel / 1.3);
-                particleEmitter.setScale(0.1, 0, 0.1, 0, 4000);
+                particleEmitter.setScale(0.1, 0.05, 0.1, 0.05, 4000);
                 particleEmitter.height = Math.abs(this.height) / 2;
                 particleEmitter.width = Math.abs(this.width);
                 particleEmitter.gravity = 0;
-                particleEmitter.start(true, 4000, null, 200); //explode particles and let them 'living' for 4s
+                particleEmitter.start(true, 30000, null, 200); //explode 200 particles and let them 'living' for 4s
                 particleEmitter.forEach(
                 function (child)
                 {
@@ -209,9 +217,18 @@ var Joust =
                     child.body.drag.x = this.drag;
                 }, this);
 
-                particleEmitter.started = true;
-                this.destroy();
+                this.body.velocity.set(0, 0);
+                this.kill();
             };
+
+            this.revive = function()
+            {
+                this.constructor.inheritedFrom.prototype.revive.apply(this, arguments);
+                this.x = this.spawnPoint.x;
+                this.y = this.spawnPoint.y;
+                this.invenciblePoints = 100;
+                this.alpha = 0.5;
+            }
         },
 
         Enemie: function (x, y, game, key) //Abstract class
@@ -246,29 +263,25 @@ var Joust =
 
             this._onUpdateFunction = function ()
             {
-                if (_this.body.velocity.x == 0 && Math.abs(_this.x - target.x) < 800)
+                if (target.alive)
                 {
-                    if (_this.x > target.x)
-                        _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
+                    if (_this.body.velocity.x == 0 && Math.abs(_this.x - target.x) < 800)
+                    {
+                        if (_this.x > target.x)
+                            _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
+
+                        else
+                            _this.body.velocity.add(_this.vel * Math.random(), 0);
+                    }
+
+                    else if (_this.body.velocity.x > 0)
+                        _this.scale.x = -1 * Math.abs(_this.scale.x);
 
                     else
-                        _this.body.velocity.add(_this.vel * Math.random(), 0);
+                        _this.scale.x = Math.abs(_this.scale.x);
                 }
-
-                else if (_this.body.velocity.x > 0)
-                    _this.scale.x = -1 * Math.abs(_this.scale.x);
-
-                else
-                    _this.scale.x = Math.abs(_this.scale.x);
-
             };
             game.time.events.onUpdate.add(this._onUpdateFunction);
-
-            target.events.onDestroy.add(
-            function ()
-            {
-                _this.game.time.events.onUpdate.remove(_this._onUpdateFunction);
-            });
         },
 
         Crab: function (x, y, game, key, vel, target)
@@ -285,48 +298,47 @@ var Joust =
 
             this._onUpdateFunction = function ()
             {
-                var touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
-
-                if (touchingTheFloor)
+                if (target.alive)
                 {
-                    if (Math.abs(_this.x - target.x) < 300)
+                    var touchingTheFloor = (_this.body.touching.down || _this.body.onFloor());
+
+                    if (touchingTheFloor)
                     {
-                        if (Math.abs(_this.x - target.x) > 10)
+                        if (Math.abs(_this.x - target.x) < 300)
                         {
-                            if (_this.x > target.x)
-                                _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
+                            if (Math.abs(_this.x - target.x) > 10)
+                            {
+                                if (_this.x > target.x)
+                                    _this.body.velocity.add(_this.vel * Math.random() * -1, 0);
+
+                                else
+                                    _this.body.velocity.add(_this.vel * Math.random(), 0);
+                            }
 
                             else
-                                _this.body.velocity.add(_this.vel * Math.random(), 0);
+                            {
+                                _this.body.velocity.x = 0;
+                            }
                         }
 
-                        else
-                        {
-                            _this.body.velocity.x = 0;
-                        }
+                        if (target.y + target.height * target.anchor.y < _this.y + _this.height * _this.anchor.y
+                            && Math.abs(_this.x - target.x) < 100)
+                            _this.body.velocity.add(0, _this.jumpVel);
                     }
 
-                    if (target.y + target.height * target.anchor.y < _this.y + _this.height * _this.anchor.y
-                        && Math.abs(_this.x - target.x) < 100)
-                        _this.body.velocity.add(0, _this.jumpVel);
+                    if (_this.body.velocity.x > 0)
+                        _this.scale.x = -1 * Math.abs(_this.scale.x);
+
+                    else
+                        _this.scale.x = Math.abs(_this.scale.x);
                 }
 
-                if (_this.body.velocity.x > 0)
-                    _this.scale.x = -1 * Math.abs(_this.scale.x);
-
                 else
-                    _this.scale.x = Math.abs(_this.scale.x);
-
+                {
+                    _this.body.velocity.x = 0;
+                }
             };
             this.game.time.events.onUpdate.add(this._onUpdateFunction);
-
-            target.events.onDestroy.add(
-            function ()
-            {
-                _this.game.time.events.onUpdate.remove(_this._onUpdateFunction);
-                _this.body.velocity.x = 0;
-            });
-
         },
 
         Flag: function (x, y, game, key) //Not "animated"
@@ -343,18 +355,24 @@ var Joust =
             this.animations.add('looping', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], 60, true);
 
             var _this = this;
-
+            
+            var looped = false;
             this.playLoop = function ()
             {
-                _this.animations.play('looping').onLoop.add(
-                function ()
+                if (!looped)
                 {
-                    if (_this.animations.currentAnim.loopCount == 2)
-                    {
-                        _this.animations.currentAnim.stop();
-                        _this.animations.frame = 0;
-                    }
-                });
+                    _this.animations.play('looping').onLoop.add(
+                     function ()
+                     {
+                         if (_this.animations.currentAnim.loopCount == 2)
+                         {
+                             _this.animations.currentAnim.stop();
+                             _this.animations.frame = 0;
+                         }
+                     });
+
+                    looped = true;
+                }
             }
         },
 
@@ -595,6 +613,29 @@ var Joust =
                     level.spawnSprites();
                 }
             },
+
+            killKnight: function(level, deadKnight)
+            {
+                deadKnight.desintegrate(level.emitter);
+                var clock = level.game.time.events.add(1000,
+                function (timer)
+                {
+                    this.game.camera.unfollow();
+                    var tween = this.game.add.tween(this.game.camera).to(
+                    {
+                        x: deadKnight.spawnPoint.x - this.game.camera.width / 2,
+                        y: deadKnight.spawnPoint.y - this.game.camera.height / 2
+                    }, 1000, Phaser.Easing.Elastic.Out, true);
+                    tween.onComplete.add(
+                    function ()
+                    {
+                        deadKnight.revive();
+                        this.game.camera.follow(deadKnight);
+                    }, level);
+                }, level, clock);
+
+                clock.autoDestroy = true;
+            }
         }
     },
 
