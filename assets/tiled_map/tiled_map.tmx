@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="40" tilewidth="32" tileheight="32" nextobjectid="70">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="40" tilewidth="32" tileheight="32" nextobjectid="71">
  <tileset firstgid="1" name="spiky" tilewidth="55" tileheight="53" tilecount="5">
   <image source="../sprites/spiky.png" width="328" height="55"/>
  </tileset>
@@ -114,6 +114,7 @@
   <object id="67" type="crab" gid="31" x="1892.65" y="697.121" width="45" height="30"/>
   <object id="68" type="flag" gid="41" x="960" y="1024" width="45" height="66"/>
   <object id="69" type="flag" gid="41" x="1536" y="704" width="45" height="66"/>
+  <object id="70" type="flag" gid="41" x="896" y="1120" width="45" height="66"/>
  </objectgroup>
  <layer name="colliding_tiles" width="100" height="40" opacity="0.59">
   <data encoding="csv">

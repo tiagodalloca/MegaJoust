@@ -17,7 +17,8 @@ Joust.levels.demo.prototype =
         this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 45, 30);
         this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 55, 48);
         this.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60);
-        this.game.load.image('knightParticle', 'assets/sprites/knightParticle.png');
+        this.game.load.image('knightParticle', 'assets/sprites/particle.png');
+        this.game.time.advancedTiming = true;
     },
 
     create: function ()
@@ -32,35 +33,38 @@ Joust.levels.demo.prototype =
         this.map.addTilesetImage('platformTile', 'platformTile');
         this.layers = {};
 
-        //Background
+        //Set background
         Joust.utils.levelConfigurationFunctions.configureBackground(this);
 
         //Visible platforms and invisible collision tiles
         this.layers.platforms = this.map.createLayer('platforms');
+        this.layers.platforms.cacheAsBitmap = true;
         this.layers.colliding_tiles = this.map.createLayer('colliding_tiles');
-        this.layers.colliding_tiles.alpha = 0;
+        this.layers.colliding_tiles.renderable = false;
         this.map.setCollision(24, true, 'colliding_tiles');
         Joust.utils.levelConfigurationFunctions.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, { top: true, bottom: false, left: false, right: false });
 
         this.layers.platforms.resizeWorld();
 
         //Configuring arcade physics world
-
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
         this.game.physics.arcade.setBoundsToWorld();
         this.game.physics.arcade.checkCollision.down = true;
         this.game.stage.backgroundColor = "rgb(255,255,255)";
         this.game.physics.arcade.gravity.y = 1200;
 
-        this.emitter = this.game.add.emitter(0, 0, 10000);
+        this.emitter = this.game.add.emitter(0, 0, 600);
         this.emitter.makeParticles('knightParticle');
-        this.emitter.rotation = 0;
+
+        //Static sprites that will be added later
+        this.staticSprites = new Phaser.Group(this.game, this.game.world, 'staticSprites');
+        this.staticSprites.cacheAsBitmap = true;
+        this.staticSprites.oldLength = 0;
 
         //Alert all the objects when the game updates
         this.game.time.events.onUpdate = new Phaser.Signal();
 
         //Spawning sprites
-
         this.sprites = {};
         this.spawnSprites();
     },
@@ -70,6 +74,7 @@ Joust.levels.demo.prototype =
         //Sprites spawnig
 
         Joust.utils.levelConfigurationFunctions.tileHeightCorrection = -32;
+        Joust.utils.levelConfigurationFunctions.tileWidthCorrection = +32;
 
         this.sprites.knight = Joust.spawners.knight(this, 'objects', Joust.utils.colors.yeallow);
         this.sprites.flag = Joust.spawners.flag(this, 'objects');
@@ -85,6 +90,7 @@ Joust.levels.demo.prototype =
     render: function ()
     {
         //Joust.game.debug.pointer(Joust.game.input.pointer1);
+        this.game.debug.text(this.game.time.fps || '--', 2, 14, "#00ff00");
     },
 
     update: function ()
@@ -101,15 +107,34 @@ Joust.levels.demo.prototype =
 
         //If the knight is touching a flag, we play flag's loop animation
         var flag = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAFlag(this);
-        if (flag)
+        if (flag && !flag.looped)
         {
+            Joust.spawners.texts.inGameText(this, flag.x, flag.y - flag.height, "checkpoint",
+                {
+                    align: "center",
+                    fill: "white",
+                    stroke: "black",
+                    strokeThickness: "3"
+                });
             this.sprites.knight.spawnPoint.set(flag.x, flag.y);
             flag.playLoop();
         }
 
         //Dispatch the update event, so the sprites are updated
-        //(Take a look at each objectConstructors' functions for better comprehension)
+        //(Take a look at each objectConstructors' functions for a better comprehension)
         this.game.time.events.onUpdate.dispatch();
+
+        if (Math.abs(this.staticSprites.oldLength - this.staticSprites.length) >= 200)
+        {
+            this.staticSprites.oldLength = this.staticSprites.length;
+            this.staticSprites.updateCache();
+
+            this.emitter.forEachAlive(
+            function (particle)
+            {
+                particle.kill();
+            });
+        }
     },
 }
 

@@ -203,11 +203,11 @@ var Joust =
                 particleEmitter.y = this.y;
                 particleEmitter.setXSpeed(-this.vel / 2 + this.body.velocity.x, this.body.velocity.x + this.vel / 2);
                 particleEmitter.setYSpeed(this.body.velocity.y / 2, this.body.velocity.y - this.jumpVel / 1.3);
-                particleEmitter.setScale(0.1, 0.05, 0.1, 0.05, 4000);
+                particleEmitter.maxParticleScale = 0.5;
+                particleEmitter.minParticleScale = 0.5;
                 particleEmitter.height = Math.abs(this.height) / 2;
-                particleEmitter.width = Math.abs(this.width);
-                particleEmitter.gravity = 0;
-                particleEmitter.start(true, 30000, null, 200); //explode 200 particles and let them 'living' for 4s
+                particleEmitter.width = Math.abs(this.width); particleEmitter.gravity = 0;
+                particleEmitter.start(true, 5000, null, 200); //explode 200 particles and let them 'living' for 4s
                 particleEmitter.forEach(
                 function (child)
                 {
@@ -221,7 +221,7 @@ var Joust =
                 this.kill();
             };
 
-            this.revive = function()
+            this.revive = function ()
             {
                 this.constructor.inheritedFrom.prototype.revive.apply(this, arguments);
                 this.x = this.spawnPoint.x;
@@ -355,11 +355,11 @@ var Joust =
             this.animations.add('looping', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], 60, true);
 
             var _this = this;
-            
-            var looped = false;
+
+            this.looped = false;
             this.playLoop = function ()
             {
-                if (!looped)
+                if (!this.looped)
                 {
                     _this.animations.play('looping').onLoop.add(
                      function ()
@@ -371,11 +371,10 @@ var Joust =
                          }
                      });
 
-                    looped = true;
+                    this.looped = true;
                 }
             }
         },
-
 
         //Not sprites
 
@@ -383,6 +382,13 @@ var Joust =
         {
             if (!(this.update && this.render && this.create && this.preload))
                 throw new Error("All the game properties must have been settled");
+
+            this.init = function()
+            {
+                if (this.scale.scaleMode != Phaser.ScaleManager.SHOW_ALL)
+                    this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+            }
+
         }
     },
 
@@ -530,10 +536,14 @@ var Joust =
                 if (Joust.utils.throwAnErrorIfItsNotALevel(level))
                 {
                     var backW = level.game.cache.getImage('backtile').width;
-                    var backH = level.game.cache.getImage('backtile').height
+                    var backH = level.game.cache.getImage('backtile').height;
+
+                    level.background = new Phaser.Group(level.game, level.game.world, 'background');
 
                     for (var i = 0; i * backW < level.map.widthInPixels; i++)
-                        level.game.add.tileSprite(i * backW, -100, backW, backH, 'backtile');
+                        level.background.create(i * backW, -100, 'backtile', false);
+
+                    level.background.cacheAsBitmap = true;
                 }
             }
 
@@ -551,7 +561,34 @@ var Joust =
                         level.game.physics.arcade.collide(sprite, level.layers.colliding_tiles);
                     }));
 
-                    level.game.physics.arcade.collide(level.emitter, level.layers.colliding_tiles);
+                    level.emitter.forEachAlive(
+                    function (particle)
+                    {
+                        level.game.physics.arcade.collide(particle, this.layers.colliding_tiles, 
+                        function (particle)
+                        {
+                            if (particle.body.velocity.y == 0 && particle.body.velocity.x == 0)
+                            {
+                                if (particle.cont != undefined)
+                                    particle.cont++;
+
+                                else
+                                    particle.cont = 0;
+
+                                if (particle.cont > 100)
+                                {
+                                    //particle.body.enable = false;
+                                    //level.staticSprites.add(particle);
+                                    var spr = level.staticSprites.create(particle.x, particle.y, particle.key);
+                                    spr.scale.set(particle.scale.x, particle.scale.y);
+                                    spr.tint = particle.tint;
+                                    //particle.visible = false;
+                                    //particle.kill();
+                                    particle.cont = 0;
+                                }
+                            }
+                        });
+                    }, level);
                 }
             },
 
@@ -614,7 +651,7 @@ var Joust =
                 }
             },
 
-            killKnight: function(level, deadKnight)
+            killKnight: function (level, deadKnight)
             {
                 deadKnight.desintegrate(level.emitter);
                 var clock = level.game.time.events.add(1000,
@@ -625,7 +662,7 @@ var Joust =
                     {
                         x: deadKnight.spawnPoint.x - this.game.camera.width / 2,
                         y: deadKnight.spawnPoint.y - this.game.camera.height / 2
-                    }, 1000, Phaser.Easing.Elastic.Out, true);
+                    }, 500, Phaser.Easing.Elastic.Out, true);
                     tween.onComplete.add(
                     function ()
                     {
@@ -693,6 +730,28 @@ var Joust =
             }
 
             return elems;
+        },
+
+        texts: 
+        {
+            inGameText: function(level, x, y, text, style)
+            {
+                style.font = "15px pixel_emulatorregular";
+                var gameText = level.game.add.text(x, y, text, style);
+                gameText.anchor.x = 0.5;
+                gameText.x = x;
+                gameText.width += 20;
+                var tween = level.game.add.tween(gameText).to(
+                    {
+                        y: y - 30,
+                        alpha: 0
+                    }, 2000, "Linear", true);
+                tween.onComplete.add(
+                function ()
+                {
+                    gameText.destroy();
+                }, level);
+            }
         }
     }
 };
