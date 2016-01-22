@@ -201,7 +201,13 @@ var Joust =
             {
                 particleEmitter.x = this.x - this.width / 2;
                 particleEmitter.y = this.y;
-                particleEmitter.setXSpeed(-this.vel / 2 + this.body.velocity.x, this.body.velocity.x + this.vel / 2);
+
+                if (this.body.velocity.x != 0)
+                    particleEmitter.setXSpeed(Math.abs(this.body.velocity.x) / this.body.velocity.x * -1 * this.vel/2, Math.abs(this.body.velocity.x) / this.body.velocity.x * (Math.abs(this.body.velocity.x * 1.5) + this.vel / 2));
+
+                else
+                    particleEmitter.setXSpeed(-this.vel, this.vel);
+
                 particleEmitter.setYSpeed(this.body.velocity.y / 2, this.body.velocity.y - this.jumpVel / 1.3);
                 particleEmitter.maxParticleScale = 0.5;
                 particleEmitter.minParticleScale = 0.5;

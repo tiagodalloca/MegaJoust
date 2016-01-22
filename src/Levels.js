@@ -58,6 +58,7 @@ Joust.levels.demo.prototype =
 
         //Static sprites that will be added later
         this.staticSprites = new Phaser.Group(this.game, this.game.world, 'staticSprites');
+        this.staticSprites.add(this.layers.platforms);
         this.staticSprites.cacheAsBitmap = true;
         this.staticSprites.oldLength = 0;
 
@@ -76,7 +77,7 @@ Joust.levels.demo.prototype =
         Joust.utils.levelConfigurationFunctions.tileHeightCorrection = -32;
         Joust.utils.levelConfigurationFunctions.tileWidthCorrection = +32;
 
-        this.sprites.knight = Joust.spawners.knight(this, 'objects', Joust.utils.colors.yeallow);
+        this.sprites.knight = Joust.spawners.knight(this, 'objects', Joust.utils.colors.purple);
         this.sprites.flag = Joust.spawners.flag(this, 'objects');
 
         this.sprites.enemies = {};
