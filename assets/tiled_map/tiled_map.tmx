@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="40" tilewidth="32" tileheight="32" nextobjectid="71">
- <tileset firstgid="1" name="spiky" tilewidth="55" tileheight="53" tilecount="5">
-  <image source="../sprites/spiky.png" width="328" height="55"/>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="40" tilewidth="32" tileheight="32" nextobjectid="78">
+ <tileset firstgid="1" name="spiky" tilewidth="110" tileheight="93" tilecount="5">
+  <image source="../sprites/spiky.png" width="656" height="93"/>
  </tileset>
  <tileset firstgid="6" name="gray_pltf" tilewidth="32" tileheight="32" spacing="2" tilecount="9">
   <image source="gray_pltf.png" width="100" height="100"/>
@@ -12,8 +12,8 @@
  <tileset firstgid="24" name="hero" tilewidth="70" tileheight="60" tilecount="7">
   <image source="../sprites/knight.png" width="495" height="61"/>
  </tileset>
- <tileset firstgid="31" name="crab" tilewidth="45" tileheight="30" tilecount="4">
-  <image source="../sprites/crab.png" width="90" height="60"/>
+ <tileset firstgid="31" name="crab" tilewidth="90" tileheight="60" tilecount="4">
+  <image source="../sprites/crab.png" width="180" height="120"/>
  </tileset>
  <tileset firstgid="35" name="platformTile" tilewidth="32" tileheight="32" tilecount="6">
   <image source="platformTile.png" width="64" height="96"/>
@@ -106,15 +106,15 @@
 </data>
  </layer>
  <objectgroup name="objects">
-  <object id="24" type="spiky" gid="1" x="192" y="1120" width="55" height="53"/>
-  <object id="35" type="spiky" gid="1" x="800" y="1120" width="55" height="53"/>
   <object id="42" name="Knight1" type="knight" gid="24" x="224" y="896" width="70" height="60"/>
-  <object id="53" type="crab" gid="31" x="1710.79" y="1021" width="45" height="30"/>
   <object id="62" type="flag" gid="41" x="2362.18" y="1123.03" width="45" height="66"/>
-  <object id="67" type="crab" gid="31" x="1892.65" y="697.121" width="45" height="30"/>
   <object id="68" type="flag" gid="41" x="960" y="1024" width="45" height="66"/>
   <object id="69" type="flag" gid="41" x="1536" y="704" width="45" height="66"/>
   <object id="70" type="flag" gid="41" x="896" y="1120" width="45" height="66"/>
+  <object id="73" type="spiky" gid="1" x="160" y="1120" width="110" height="106"/>
+  <object id="75" type="spiky" gid="1" x="736" y="1120" width="110" height="106"/>
+  <object id="76" type="crab" gid="31" x="1536" y="1024" width="90" height="60"/>
+  <object id="77" type="crab" gid="32" x="1856" y="704" width="90" height="60"/>
  </objectgroup>
  <layer name="colliding_tiles" width="100" height="40" opacity="0.59">
   <data encoding="csv">

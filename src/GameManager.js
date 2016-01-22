@@ -3,6 +3,6 @@
 
 window.onload = function ()
 {
-    var game = new Phaser.Game(1080/1.5, 720/1.5, Phaser.AUTO, 'mainGame', null, false, false);
+    var game = new Phaser.Game(1600/1.5, 900/1.5, Phaser.CANVAS, 'mainGame', null, false, false);
     game.state.add('demo', Joust.levels.demo, true);
 };

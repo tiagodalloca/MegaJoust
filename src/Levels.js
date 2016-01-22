@@ -14,8 +14,8 @@ Joust.levels.demo.prototype =
         this.game.load.image('platformTile', 'assets/tiled_map/platformTile.png');
         this.game.load.image('backtile', 'assets/tiled_map/backtile.png');
         this.game.load.spritesheet('flag', 'assets/sprites/flag.png', 45, 66);
-        this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 45, 30);
-        this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 55, 48);
+        this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 90, 60);
+        this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 110, 93);
         this.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60);
         this.game.load.image('knightParticle', 'assets/sprites/particle.png');
         this.game.time.advancedTiming = true;
@@ -53,13 +53,12 @@ Joust.levels.demo.prototype =
         this.game.stage.backgroundColor = "rgb(255,255,255)";
         this.game.physics.arcade.gravity.y = 1200;
 
-        this.emitter = this.game.add.emitter(0, 0, 600);
-        this.emitter.makeParticles('knightParticle');
-
         //Static sprites that will be added later
         this.staticSprites = new Phaser.Group(this.game, this.game.world, 'staticSprites');       
         this.staticSprites.cacheAsBitmap = true;
         this.staticSprites.oldLength = 0;
+        //All the sprites that are placed in 'trash' are killed after updating cache
+        this.staticSprites.trash = [];
 
         //Alert all the objects when the game updates
         this.game.time.events.onUpdate = new Phaser.Signal();
@@ -81,8 +80,11 @@ Joust.levels.demo.prototype =
 
         this.sprites.enemies = {};
 
-        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight, 1.1);
-        this.sprites.enemies.crab = Joust.spawners.crab(this, 'objects', this.sprites.knight, 2);
+        this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight, 0.7);
+        this.sprites.enemies.crab = Joust.spawners.crab(this, 'objects', this.sprites.knight, 1);
+
+        //I wanna sharp pixels, man!
+        this.game.stage.smoothed = false;
 
         this.game.camera.follow(this.sprites.knight);
     },
@@ -129,10 +131,10 @@ Joust.levels.demo.prototype =
             this.staticSprites.oldLength = this.staticSprites.length;
             this.staticSprites.updateCache();
 
-            this.emitter.forEachAlive(
-            function (particle)
+            this.staticSprites.trash.forEach(
+            function (sprite)
             {
-                particle.kill();
+                sprite.kill();
             });
         }
     },

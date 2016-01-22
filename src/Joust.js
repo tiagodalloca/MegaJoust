@@ -51,6 +51,9 @@ var Joust =
             this.alpha = 0.5;
             game.add.existing(this);
 
+            this.emitter = game.add.emitter(0, 0, 600);
+            this.emitter.makeParticles('knightParticle');
+
             this.spawnPoint = new Phaser.Point(x, y);
 
             this.drag = drag;
@@ -197,24 +200,24 @@ var Joust =
                 _body.velocity.set(_body.velocity.x, -_this.jumpVel);
             };
 
-            this.desintegrate = function (particleEmitter)
+            this.desintegrate = function ()
             {
-                particleEmitter.x = this.x - this.width / 2;
-                particleEmitter.y = this.y;
+                this.emitter.x = this.x - this.width / 2;
+                this.emitter.y = this.y;
 
                 if (this.body.velocity.x != 0)
-                    particleEmitter.setXSpeed(Math.abs(this.body.velocity.x) / this.body.velocity.x * -1 * this.vel/2, Math.abs(this.body.velocity.x) / this.body.velocity.x * (Math.abs(this.body.velocity.x * 1.5) + this.vel / 2));
+                    this.emitter.setXSpeed(Math.abs(this.body.velocity.x) / this.body.velocity.x * -1 * this.vel/2, Math.abs(this.body.velocity.x) / this.body.velocity.x * (Math.abs(this.body.velocity.x * 1.5) + this.vel / 2));
 
                 else
-                    particleEmitter.setXSpeed(-this.vel, this.vel);
+                    this.emitter.setXSpeed(-this.vel, this.vel);
 
-                particleEmitter.setYSpeed(this.body.velocity.y / 2, this.body.velocity.y - this.jumpVel / 1.3);
-                particleEmitter.maxParticleScale = 0.5;
-                particleEmitter.minParticleScale = 0.5;
-                particleEmitter.height = Math.abs(this.height) / 2;
-                particleEmitter.width = Math.abs(this.width); particleEmitter.gravity = 0;
-                particleEmitter.start(true, 5000, null, 200); //explode 200 particles and let them 'living' for 4s
-                particleEmitter.forEach(
+                this.emitter.setYSpeed(this.body.velocity.y / 2, this.body.velocity.y - this.jumpVel / 1.3);
+                this.emitter.maxParticleScale = 0.5;
+                this.emitter.minParticleScale = 0.5;
+                this.emitter.height = Math.abs(this.height) / 2;
+                this.emitter.width = Math.abs(this.width); this.emitter.gravity = 0;
+                this.emitter.start(true, 5000, null, 200); //explode 200 particles and let them 'living' for 4s
+                this.emitter.forEach(
                 function (child)
                 {
                     child.tint = this.tint;
@@ -391,8 +394,10 @@ var Joust =
 
             this.init = function()
             {
-                if (this.scale.scaleMode != Phaser.ScaleManager.SHOW_ALL)
-                    this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+                if (this.scale.scaleMode != Phaser.ScaleManager.NO_SCALE)
+                    this.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
+
+                this.game.stage.smoothed = false;
             }
 
         }
@@ -567,34 +572,27 @@ var Joust =
                         level.game.physics.arcade.collide(sprite, level.layers.colliding_tiles);
                     }));
 
-                    level.emitter.forEachAlive(
-                    function (particle)
+                    level.game.physics.arcade.collide(level.sprites.knight.emitter, level.layers.colliding_tiles, 
+                    function(particle)
                     {
-                        level.game.physics.arcade.collide(particle, this.layers.colliding_tiles, 
-                        function (particle)
+                        if (particle.body.velocity.y == 0 && particle.body.velocity.x == 0)
                         {
-                            if (particle.body.velocity.y == 0 && particle.body.velocity.x == 0)
+                            if (particle.cont != undefined)
+                                particle.cont++;
+
+                            else
+                                particle.cont = 0;
+
+                            if (particle.cont > 100)
                             {
-                                if (particle.cont != undefined)
-                                    particle.cont++;
-
-                                else
-                                    particle.cont = 0;
-
-                                if (particle.cont > 100)
-                                {
-                                    //particle.body.enable = false;
-                                    //level.staticSprites.add(particle);
-                                    var spr = level.staticSprites.create(particle.x, particle.y, particle.key);
-                                    spr.scale.set(particle.scale.x, particle.scale.y);
-                                    spr.tint = particle.tint;
-                                    //particle.visible = false;
-                                    //particle.kill();
-                                    particle.cont = 0;
-                                }
+                                level.staticSprites.trash.push(particle);
+                                var spr = level.staticSprites.create(particle.x, particle.y, particle.key);
+                                spr.scale.set(particle.scale.x, particle.scale.y);
+                                spr.tint = particle.tint;
+                                particle.cont = 0;
                             }
-                        });
-                    }, level);
+                        }
+                    });
                 }
             },
 
@@ -659,7 +657,7 @@ var Joust =
 
             killKnight: function (level, deadKnight)
             {
-                deadKnight.desintegrate(level.emitter);
+                deadKnight.desintegrate();
                 var clock = level.game.time.events.add(1000,
                 function (timer)
                 {
