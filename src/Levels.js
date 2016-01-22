@@ -57,8 +57,7 @@ Joust.levels.demo.prototype =
         this.emitter.makeParticles('knightParticle');
 
         //Static sprites that will be added later
-        this.staticSprites = new Phaser.Group(this.game, this.game.world, 'staticSprites');
-        this.staticSprites.add(this.layers.platforms);
+        this.staticSprites = new Phaser.Group(this.game, this.game.world, 'staticSprites');       
         this.staticSprites.cacheAsBitmap = true;
         this.staticSprites.oldLength = 0;
 
