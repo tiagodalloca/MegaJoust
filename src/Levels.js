@@ -9,15 +9,14 @@ Joust.levels.demo.prototype =
     preload: function ()
     {
         this.game.load.tilemap('map', 'assets/tiled_map/tiled_map.json', null, Phaser.Tilemap.TILED_JSON);
-        this.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png');
-        this.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png');
-        this.game.load.image('platformTile', 'assets/tiled_map/platformTile.png');
-        this.game.load.image('backtile', 'assets/tiled_map/backtile.png');
-        this.game.load.spritesheet('flag', 'assets/sprites/flag.png', 45, 66);
-        this.game.load.spritesheet('crab', 'assets/sprites/crab.png', 90, 60);
-        this.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 110, 93);
-        this.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60);
-        this.game.load.image('knightParticle', 'assets/sprites/particle.png');
+        Joust.utils.loader.loadGrayPlatform(this);
+        Joust.utils.loader.loadIcedPlatform(this);
+        Joust.utils.loader.loadCollidingPlatform(this);
+        Joust.utils.loader.loadBackground(this, 'assets/tiled_map/backtile.png');
+        Joust.utils.loader.loadCheckpointFlag(this);
+        Joust.utils.loader.loadEnemieCrab(this);
+        Joust.utils.loader.loadEnemieSpiky(this);
+        Joust.utils.loader.loadKnight(this);
         this.game.time.advancedTiming = true;
     },
 
@@ -37,55 +36,47 @@ Joust.levels.demo.prototype =
         Joust.utils.levelConfigurationFunctions.configureBackground(this);
 
         //Visible platforms and invisible collision tiles
-        this.layers.platforms = this.map.createLayer('platforms');
-        this.layers.platforms.cacheAsBitmap = true;
-        this.layers.colliding_tiles = this.map.createLayer('colliding_tiles');
-        this.layers.colliding_tiles.renderable = false;
-        this.map.setCollision(24, true, 'colliding_tiles');
-        Joust.utils.levelConfigurationFunctions.setCollisionDirectionsFromTiles(this.layers.colliding_tiles, { top: true, bottom: false, left: false, right: false });
+        Joust.utils.levelConfigurationFunctions.configureVisibleTiles(this, 'platforms', true);
+        Joust.utils.levelConfigurationFunctions.configureCollidingTiles(this, 'colliding_tiles');
 
         this.layers.platforms.resizeWorld();
 
         //Configuring arcade physics world
-        this.game.physics.startSystem(Phaser.Physics.ARCADE);
-        this.game.physics.arcade.setBoundsToWorld();
-        this.game.physics.arcade.checkCollision.down = true;
-        this.game.stage.backgroundColor = "rgb(255,255,255)";
-        this.game.physics.arcade.gravity.y = 1200;
+        Joust.utils.levelConfigurationFunctions.configureArcadePhysics(this, 1200);
 
-        //Static sprites that will be added later
-        this.staticSprites = new Phaser.Group(this.game, this.game.world, 'staticSprites');       
-        this.staticSprites.cacheAsBitmap = true;
-        this.staticSprites.oldLength = 0;
-        //All the sprites that are placed in 'trash' are killed after updating cache
-        this.staticSprites.trash = [];
+        //'level.staticSprites' has cacheAsBitmap=true, so no animation will work here
+        Joust.utils.levelConfigurationFunctions.configureStaticSprites(this);
 
         //Alert all the objects when the game updates
         this.game.time.events.onUpdate = new Phaser.Signal();
 
         //Spawning sprites
-        this.sprites = {};
         this.spawnSprites();
     },
 
     spawnSprites: function ()
     {
-        //Sprites spawnig
-
         Joust.utils.levelConfigurationFunctions.tileHeightCorrection = -32;
         Joust.utils.levelConfigurationFunctions.tileWidthCorrection = +32;
 
-        this.sprites.knight = Joust.spawners.knight(this, 'objects', Joust.utils.colors.purple);
+        this.sprites.knight = Joust.spawners.knight(this, 'objects', Joust.utils.colors.RED);
         this.sprites.flag = Joust.spawners.flag(this, 'objects');
-
-        this.sprites.enemies = {};
-
         this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight, 0.7);
         this.sprites.enemies.crab = Joust.spawners.crab(this, 'objects', this.sprites.knight, 1);
 
-        //I wanna sharp pixels, man!
+        //Checkpoint text
+        Joust.spawners.texts.inGameText(this, 0, 0, "checkpoint",
+                {
+                    align: "center",
+                    fill: "white",
+                    stroke: "black",
+                    strokeThickness: "3"
+                }, true);
+
+        //I wanna sharp pixels, man! (But it doesn't seem to make any difference at all)
         this.game.stage.smoothed = false;
 
+        //Camera move makes the game lag
         this.game.camera.follow(this.sprites.knight);
     },
 
@@ -111,13 +102,7 @@ Joust.levels.demo.prototype =
         var flag = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAFlag(this);
         if (flag && !flag.looped)
         {
-            Joust.spawners.texts.inGameText(this, flag.x, flag.y - flag.height, "checkpoint",
-                {
-                    align: "center",
-                    fill: "white",
-                    stroke: "black",
-                    strokeThickness: "3"
-                });
+            Joust.spawners.texts.inGameText(this, flag.x, flag.y - flag.height, "checkpoint");
             this.sprites.knight.spawnPoint.set(flag.x, flag.y);
             flag.playLoop();
         }

@@ -51,7 +51,7 @@ var Joust =
             this.alpha = 0.5;
             game.add.existing(this);
 
-            this.emitter = game.add.emitter(0, 0, 600);
+            this.emitter = game.add.emitter(0, 0, 200);
             this.emitter.makeParticles('knightParticle');
 
             this.spawnPoint = new Phaser.Point(x, y);
@@ -206,7 +206,7 @@ var Joust =
                 this.emitter.y = this.y;
 
                 if (this.body.velocity.x != 0)
-                    this.emitter.setXSpeed(Math.abs(this.body.velocity.x) / this.body.velocity.x * -1 * this.vel/2, Math.abs(this.body.velocity.x) / this.body.velocity.x * (Math.abs(this.body.velocity.x * 1.5) + this.vel / 2));
+                    this.emitter.setXSpeed(Math.abs(this.body.velocity.x) / this.body.velocity.x * -1 * this.vel / 2, Math.abs(this.body.velocity.x) / this.body.velocity.x * (Math.abs(this.body.velocity.x * 1.5) + this.vel / 2));
 
                 else
                     this.emitter.setXSpeed(-this.vel, this.vel);
@@ -392,12 +392,15 @@ var Joust =
             if (!(this.update && this.render && this.create && this.preload))
                 throw new Error("All the game properties must have been settled");
 
-            this.init = function()
+            this.init = function ()
             {
                 if (this.scale.scaleMode != Phaser.ScaleManager.NO_SCALE)
                     this.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
 
                 this.game.stage.smoothed = false;
+
+                this.sprites = {};
+                this.sprites.enemies = {};
             }
 
         }
@@ -437,15 +440,15 @@ var Joust =
 
         colors:
         {
-            red: 0xdb1100,
-            lightred: 0xff5a5a,
-            yeallow: 0xffce00,
-            orange: 0xffa500,
-            green: 0x00a800,
-            lightblue: 0x00a3aa,
-            blue: 0x004fcc,
-            darkblue: 0x000577,
-            purple: 0x7500a8
+            RED: 0xdb1100,
+            LIGHTRED: 0xff5a5a,
+            YEALLOW: 0xffce00,
+            ORANGE: 0xffa500,
+            GREEN: 0x00a800,
+            LIGHTBLUE: 0x00a3aa,
+            BLUE: 0x004fcc,
+            DARKBLUE: 0x000577,
+            PURPLE: 0x7500a8
         },
 
         throwAnErrorIfItsNotALevel: function (thing)
@@ -546,6 +549,8 @@ var Joust =
             {
                 if (Joust.utils.throwAnErrorIfItsNotALevel(level))
                 {
+                    level.game.stage.backgroundColor = "rgb(255,255,255)";
+
                     var backW = level.game.cache.getImage('backtile').width;
                     var backH = level.game.cache.getImage('backtile').height;
 
@@ -556,6 +561,40 @@ var Joust =
 
                     level.background.cacheAsBitmap = true;
                 }
+            },
+
+            configureCollidingTiles: function (level, layerName)
+            {
+                level.layers.colliding_tiles = level.map.createLayer(layerName);
+                level.layers.colliding_tiles.renderable = false;
+                level.layers.colliding_tiles.visible = false;
+                level.map.setCollision(24, true, layerName);
+                Joust.utils.levelConfigurationFunctions.setCollisionDirectionsFromTiles(level.layers.colliding_tiles);
+            },
+
+            configureVisibleTiles: function (level, layerName, cacheAsBitmap)
+            {
+                level.layers[layerName] = level.map.createLayer('platforms');
+
+                if (cacheAsBitmap)
+                    level.layers.platforms.cacheAsBitmap = cacheAsBitmap;
+            },
+
+            configureArcadePhysics: function (level, gravity)
+            {
+                level.game.physics.startSystem(Phaser.Physics.ARCADE);
+                level.game.physics.arcade.setBoundsToWorld();
+                level.game.physics.arcade.gravity.y = gravity;
+            },
+
+            configureStaticSprites: function (level)
+            {
+                //Static sprites that will be added later
+                level.staticSprites = new Phaser.Group(level.game, level.game.world, 'staticSprites');
+                level.staticSprites.cacheAsBitmap = true;
+                level.staticSprites.oldLength = 0;
+                //All the sprites that are placed in 'trash' are killed after updating cache
+                level.staticSprites.trash = [];
             }
 
         },
@@ -572,8 +611,8 @@ var Joust =
                         level.game.physics.arcade.collide(sprite, level.layers.colliding_tiles);
                     }));
 
-                    level.game.physics.arcade.collide(level.sprites.knight.emitter, level.layers.colliding_tiles, 
-                    function(particle)
+                    level.game.physics.arcade.collide(level.sprites.knight.emitter, level.layers.colliding_tiles,
+                    function (particle)
                     {
                         if (particle.body.velocity.y == 0 && particle.body.velocity.x == 0)
                         {
@@ -677,7 +716,20 @@ var Joust =
 
                 clock.autoDestroy = true;
             }
-        }
+        },
+
+        loader:
+        {
+            loadGrayPlatform: function (level) { level.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png'); },
+            loadIcedPlatform: function (level) { level.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png'); },
+            loadCollidingPlatform: function (level) { level.game.load.image('platformTile', 'assets/tiled_map/platformTile.png'); },
+            loadBackground: function (level, path) { level.game.load.image('backtile', path); },
+            loadCheckpointFlag: function (level) { level.game.load.spritesheet('flag', 'assets/sprites/flag.png', 45, 66); },
+            loadEnemieCrab: function (level) { level.game.load.spritesheet('crab', 'assets/sprites/crab.png', 90, 60); },
+            loadEnemieSpiky: function (level) { level.game.load.spritesheet('spiky', 'assets/sprites/spiky.png', 110, 93); },
+            loadKnight: function (level) { level.game.load.spritesheet('knight', 'assets/sprites/knight.png', 70, 60); level.game.load.image('knightParticle', 'assets/sprites/particle.png'); }
+
+        },
     },
 
     levels:
@@ -715,7 +767,7 @@ var Joust =
             for (var cont = 0; cont < elems.length; cont++)
             {
                 var ele = elems[cont];
-                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 50 + Math.random() * 10, target, scale);
+                ele = new Joust.objectsConstructors.Crab(ele.x, ele.y, level.game, 'crab', 45 + Math.random() * 5, target, scale);
                 elems[cont] = ele;
             }
 
@@ -736,25 +788,68 @@ var Joust =
             return elems;
         },
 
-        texts: 
+        texts:
         {
-            inGameText: function(level, x, y, text, style)
+            inGameText: function inGameText(level, x, y, text, style, addToCacheOnly)
             {
-                style.font = "15px pixel_emulatorregular";
-                var gameText = level.game.add.text(x, y, text, style);
-                gameText.anchor.x = 0.5;
-                gameText.x = x;
-                gameText.width += 20;
-                var tween = level.game.add.tween(gameText).to(
-                    {
-                        y: y - 30,
-                        alpha: 0
-                    }, 2000, "Linear", true);
-                tween.onComplete.add(
-                function ()
+                var gameText;
+
+                if (!inGameText.cache)
                 {
-                    gameText.destroy();
-                }, level);
+                    inGameText.cache = {};
+                    createText();
+                    inGameText[gameText.text] = gameText;
+                }
+
+                if (!addToCacheOnly)
+                {
+                    if (!inGameText[text])
+                        createText();
+
+                    else
+                        reviveText();
+
+
+                    var tween = level.game.add.tween(gameText).to(
+                        {
+                            y: y - 30,
+                            alpha: 0.3
+                        }, 1000, "Linear", true);
+                    tween.onComplete.add(
+                    function ()
+                    {
+                        gameText.alpha = 1;
+                        gameText.kill();
+                    }, level);
+                }
+
+                else
+                {
+                    createText();
+                    inGameText.cache[text] = null;
+                    createText();
+                    gameText.kill();
+                }
+
+                function createText()
+                {
+                    style.font = "15px pixel_emulatorregular";
+                    gameText = level.game.add.text(x, y, text, style);
+                    gameText.smoothed = false;
+                    gameText.width += 20;
+                    gameText.anchor.x = 0.5;
+                    inGameText.cache[text] = gameText;
+                }
+
+                function reviveText()
+                {
+                    gameText = inGameText.cache[text];
+                    gameText.x = x;
+                    gameText.y = y;
+                    gameText.revive();
+                }
+
+                return gameText;
             }
         }
     }
