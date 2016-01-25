@@ -400,11 +400,19 @@ var Joust =
             //!!BUT DO NOT INSTANTIATE!!
             //(Take a look at the final lines of Levels.js)
 
-            if (!(this.create || this.preload))
-                throw new Error("'create' and 'preload' properties must have been settled!");
+            if (!(this.create || this.preload || this.mapKey || this.mapPath))
+                throw new Error("'create', 'preload, 'mapKey' and 'mapPath' properties must have been settled!");
 
-            this._defaultUpdate =
-            function ()
+            this.layers = {};
+
+            this._defaultCreate = function ()
+            {
+                this.game.canvas.addEventListener("mousedown", (function () { Joust.goFullScreen(this.game) }).bind(this));
+                //Set background
+                Joust.utils.levelConfigurationFunctions.configureBackground(this);
+            };
+
+            this._defaultUpdate = function ()
             {
                 //Collides "physics" tiles with all the sprites
                 Joust.utils.levelBehaviorFunctions.collideSpritesWithCollisionTiles(this);
@@ -451,15 +459,13 @@ var Joust =
                 }
             };
 
-            this._defaultRender =
-            function ()
+            this._defaultRender = function ()
             {
                 //Joust.game.debug.pointer(Joust.game.input.pointer1);
                 this.game.debug.text(this.game.time.fps || '--', 2, 14, "#00ff00");
             };
 
-            this._defaultSpawnSprites =
-            function ()
+            this._defaultSpawnSprites = function ()
             {
                 this.sprites.knight = Joust.spawners.knight(this, 'objects', Math.random() * 0xffffff);
                 this.sprites.flag = Joust.spawners.flag(this, 'objects');
@@ -483,14 +489,13 @@ var Joust =
                 this.game.camera.follow(this.sprites.knight);
             };
 
-            this._defaultFinishLevel =
-            function ()
+            this._defaultFinishLevel = function ()
             {
                 Joust.utils.levelBehaviorFunctions.resetLevel(this);
             };
 
             if (!this.update)
-                this.update = this._defaultUpdate
+                this.update = this._defaultUpdate;
 
             if (!this.render)
                 this.render = this._defaultRender;
@@ -501,7 +506,6 @@ var Joust =
             if (!this.finishLevel)
                 this.finishLevel = this._defaultFinishLevel;
 
-
             this.init = function ()
             {
                 if (this.scale.scaleMode != Phaser.ScaleManager.SHOW_ALL)
@@ -511,6 +515,8 @@ var Joust =
 
                 this.sprites = {};
                 this.sprites.enemies = {};
+                //Alert all the objects (many are sprites) when the game updates
+                this.game.time.events.onUpdate = new Phaser.Signal();
             }
         }
     },
@@ -683,7 +689,7 @@ var Joust =
 
             configureVisibleTiles: function (level, layerName, cacheAsBitmap)
             {
-                level.layers[layerName] = level.map.createLayer('platforms');
+                level.layers[layerName] = level.map.createLayer(layerName);
 
                 if (cacheAsBitmap)
                     level.layers.platforms.cacheAsBitmap = cacheAsBitmap;
@@ -834,17 +840,55 @@ var Joust =
         loader:
         {
             //Super auto load stuff!
-            autoLoadTilesets: function(level, mapKeyName, tileW, tileH)
+            loadEverything:
+            {
+                preload: function ()
+                {
+                    Joust.utils.loader.loadCheckpointFlag(this);
+                    Joust.utils.loader.loadEnemieCrab(this);
+                    Joust.utils.loader.loadEnemieSpiky(this);
+                    Joust.utils.loader.loadKnight(this);
+                    Joust.utils.loader.loadGrayPlatform(this);
+                    Joust.utils.loader.loadIcedPlatform(this);
+                    Joust.utils.loader.loadCollidingPlatform(this);
+                    Joust.utils.loader.loadGrassPlatform(this);
+
+                    Joust.utils.forEveryItem(Joust.levels,
+                    (function (level)
+                    {
+                        this.game.load.tilemap(level.prototype.mapKey, level.prototype.mapPath, null, Phaser.Tilemap.TILED_JSON);
+                    }).bind(this));
+                }
+            },
+
+            autoLoadTilesets: function (level, mapKeyName, tileW, tileH)
             {
                 level.map = level.game.add.tilemap(mapKeyName, tileW, tileH);
-                //??
+                level.map.loadedTilesets = [];
+                level.map.tilesets.forEach(
+                (function (tileset)
+                {
+                    switch (tileset.name.toLowerCase())
+                    {
+                        case 'grass_pltf':
+                            this.map.addTilesetImage('grass_pltf');
+                            break;
+
+                        case 'gray_pltf':
+                            this.map.addTilesetImage('gray_pltf');
+                            break;
+
+                        case 'iced_pltf':
+                            this.map.addTilesetImage('iced_pltf');
+                            break;
+                    }
+                }).bind(level));
             },
 
             //Common
             loadGrassPlatform: function (level) { level.game.load.image('grass_pltf', 'assets/tiled_map/grass_pltf.png'); },
             loadGrayPlatform: function (level) { level.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png'); },
             loadIcedPlatform: function (level) { level.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png'); },
-            loadCollidingPlatform: function (level) { level.game.load.image('platformTile', 'assets/tiled_map/platformTile.png'); },
             loadBackground: function (level, path) { level.game.load.image('backtile', path); },
             loadCheckpointFlag: function (level) { level.game.load.spritesheet('flag', 'assets/sprites/flag.png', 45, 66); },
             loadEnemieCrab: function (level) { level.game.load.spritesheet('crab', 'assets/sprites/crab.png', 90, 60); },

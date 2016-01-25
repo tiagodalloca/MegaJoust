@@ -6,5 +6,9 @@ window.onload = function ()
 
     var game = new Phaser.Game(800, 450, Phaser.CANVAS, 'mainGame', null, false, false);
     
-    game.state.add('demo', Joust.levels.demo, true);
+    (game.state.add('loadEverything', Joust.utils.loader.loadEverything, true)).create =
+     function ()
+     {
+         game.state.add('levelDemo', Joust.levels.demo, true);
+     };
 };
