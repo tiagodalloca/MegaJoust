@@ -25,7 +25,7 @@ var Joust =
 
     goFullScreen: function (game)
     {
-        game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
+        game.scale.fullScreenScaleMode = Phaser.ScaleManager.NO_SCALE;
         if (game.scale.isFullScreen)
         {
             game.scale.stopFullScreen();
@@ -51,8 +51,13 @@ var Joust =
             this.alpha = 0.5;
             game.add.existing(this);
 
-            this.emitter = game.add.emitter(0, 0, 200);
-            this.emitter.makeParticles('knightParticle');
+            this.particleTexture = new Phaser.Sprite(game, 0, 0, 'knightParticle');
+            this.particleTexture.scale.set(0.5, 0.5);
+            this.particleTexture.tint = tint;
+            this.particleTexture = this.particleTexture.generateTexture();
+
+            this.emitter = new Phaser.Particles.Arcade.Emitter(game, 0, 0, 200);
+            this.emitter.makeParticles(this.particleTexture, 0, 160, true);
 
             this.spawnPoint = new Phaser.Point(x, y);
 
@@ -61,6 +66,7 @@ var Joust =
             this.jumpVel = jumpVel;
 
             game.physics.arcade.enable(this);
+            this.body.setSize(this.width - 30, this.height, 0, 0);
             this.body.collideWorldBounds = true;
             this.body.width -= this.size * 5;
             this.body.height -= this.size * 5;
@@ -87,7 +93,9 @@ var Joust =
                     runningFrameSpeed = Math.round(Math.abs(_this.body.velocity.x) / 20);
 
                     if (touchingTheFloor)
+                    {
                         _this.nFlights = 0;
+                    }
 
                     if (runningFrameSpeed < 5)
                         runningFrameSpeed = 5;
@@ -158,11 +166,7 @@ var Joust =
             };
             this._onUpArrowUp = function ()
             {
-                if (_this.nFlights < 3 && _this.alive)
-                {
-                    _this.fly();
-                    _this.nFlights++;
-                }
+                _this.fly();
             };
 
             game.input.keyboard.addKey(Phaser.Keyboard.UP).onUp.add(this._onUpArrowUp);
@@ -196,8 +200,12 @@ var Joust =
 
             this.fly = function ()
             {
-                _this.play('fly');
-                _body.velocity.set(_body.velocity.x, -_this.jumpVel);
+                if (_this.nFlights < 3 && _this.alive)
+                {
+                    _this.play('fly');
+                    _body.velocity.set(_body.velocity.x, -_this.jumpVel);
+                    _this.nFlights++;
+                }
             };
 
             this.desintegrate = function ()
@@ -216,12 +224,11 @@ var Joust =
                 this.emitter.minParticleScale = 0.5;
                 this.emitter.height = Math.abs(this.height) / 2;
                 this.emitter.width = Math.abs(this.width); this.emitter.gravity = 0;
-                this.emitter.start(true, 5000, null, 200); //explode 200 particles and let them 'living' for 4s
+                this.emitter.start(true, 5000, null, 80); //explode 200 particles and let them 'living' for 5s
                 this.emitter.forEach(
                 function (child)
                 {
                     child.tint = this.tint;
-                    child.rotation = (Math.round(Math.random() * 4) * 90) * Math.PI / 180;
                     child.body.allowRotation = false;
                     child.body.drag.x = this.drag;
                 }, this);
@@ -387,22 +394,124 @@ var Joust =
 
         //Not sprites
 
-        Level: function () //Class that represents a stage or level from the game
+        Level: function Level()
         {
-            if (!(this.update && this.render && this.create && this.preload))
-                throw new Error("All the game properties must have been settled");
+            //Class that represents a stage or level from the game
+            //!!BUT DO NOT INSTANTIATE!!
+            //(Take a look at the final lines of Levels.js)
+
+            if (!(this.create || this.preload))
+                throw new Error("'create' and 'preload' properties must have been settled!");
+
+            this._defaultUpdate =
+            function ()
+            {
+                //Collides "physics" tiles with all the sprites
+                Joust.utils.levelBehaviorFunctions.collideSpritesWithCollisionTiles(this);
+
+                //If the knight is touching an enemie, the level is reseted
+                var deadKnight = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAnEnemie(this)
+                if (deadKnight && deadKnight.invenciblePoints == 0)
+                {
+                    Joust.utils.levelBehaviorFunctions.killKnight(this, deadKnight);
+                }
+
+                //If the knight is touching a flag, we play flag's loop animation
+                var flag = Joust.utils.levelBehaviorFunctions.isTheKnightTouchingAFlag(this);
+                if (flag && !flag.looped)
+                {
+                    var cont = 0;
+                    this.sprites.flag.forEach(function (elem) { if (elem.looped) cont++; });
+
+                    if (cont + 1 == this.sprites.flag.length) //If that is the last flag, then finish the level
+                        this.finishLevel();
+
+                    else
+                    {
+                        Joust.spawners.texts.inGameText(this, flag.x, flag.y - flag.height, "checkpoint");
+                        this.sprites.knight.spawnPoint.set(flag.x, flag.y);
+                        flag.playLoop();
+                    }
+                }
+
+                //Dispatch the update event, so the sprites are updated
+                //(Take a look at each objectConstructors' functions for a better comprehension)
+                this.game.time.events.onUpdate.dispatch();
+
+                if (Math.abs(this.staticSprites.oldLength - this.staticSprites.length) >= 200)
+                {
+                    this.staticSprites.oldLength = this.staticSprites.length;
+                    this.staticSprites.updateCache();
+
+                    this.staticSprites.trash.forEach(
+                    function (sprite)
+                    {
+                        sprite.kill();
+                    });
+                }
+            };
+
+            this._defaultRender =
+            function ()
+            {
+                //Joust.game.debug.pointer(Joust.game.input.pointer1);
+                this.game.debug.text(this.game.time.fps || '--', 2, 14, "#00ff00");
+            };
+
+            this._defaultSpawnSprites =
+            function ()
+            {
+                this.sprites.knight = Joust.spawners.knight(this, 'objects', Math.random() * 0xffffff);
+                this.sprites.flag = Joust.spawners.flag(this, 'objects');
+                this.sprites.enemies.spiky = Joust.spawners.spiky(this, 'objects', this.sprites.knight, 0.7);
+                this.sprites.enemies.crab = Joust.spawners.crab(this, 'objects', this.sprites.knight, 1);
+
+                //Checkpoint text
+                Joust.spawners.texts.inGameText(this, 0, 0, "checkpoint",
+                        {
+                            align: "center",
+                            fill: "white",
+                            stroke: "black",
+                            strokeThickness: "3"
+                        }, true);
+
+
+                //I wanna sharp pixels, man! (But it doesn't seem to make any difference at all)
+                this.game.stage.smoothed = false;
+
+                //Camera move makes the game lag
+                this.game.camera.follow(this.sprites.knight);
+            };
+
+            this._defaultFinishLevel =
+            function ()
+            {
+                Joust.utils.levelBehaviorFunctions.resetLevel(this);
+            };
+
+            if (!this.update)
+                this.update = this._defaultUpdate
+
+            if (!this.render)
+                this.render = this._defaultRender;
+
+            if (!this.spawnSprites)
+                this.spawnSprites = this._defaultSpawnSprites;
+
+            if (!this.finishLevel)
+                this.finishLevel = this._defaultFinishLevel;
+
 
             this.init = function ()
             {
-                if (this.scale.scaleMode != Phaser.ScaleManager.NO_SCALE)
-                    this.scale.scaleMode = Phaser.ScaleManager.NO_SCALE;
+                if (this.scale.scaleMode != Phaser.ScaleManager.SHOW_ALL)
+                    this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 
                 this.game.stage.smoothed = false;
 
                 this.sprites = {};
                 this.sprites.enemies = {};
             }
-
         }
     },
 
@@ -612,7 +721,7 @@ var Joust =
                     }));
 
                     level.game.physics.arcade.collide(level.sprites.knight.emitter, level.layers.colliding_tiles,
-                    function (particle)
+                    function Bob(particle)
                     {
                         if (particle.body.velocity.y == 0 && particle.body.velocity.x == 0)
                         {
@@ -624,10 +733,14 @@ var Joust =
 
                             if (particle.cont > 100)
                             {
+                                if (!Bob.particleTexture)
+                                    Bob.particleTexture = particle.generateTexture();
+
                                 level.staticSprites.trash.push(particle);
-                                var spr = level.staticSprites.create(particle.x, particle.y, particle.key);
+                                var spr = level.staticSprites.create(particle.x, particle.y, Bob.particleTexture);
+                                spr.anchor.x = 0.5;
+                                spr.anchor.y = 0.5;
                                 spr.scale.set(particle.scale.x, particle.scale.y);
-                                spr.tint = particle.tint;
                                 particle.cont = 0;
                             }
                         }
@@ -720,6 +833,7 @@ var Joust =
 
         loader:
         {
+            loadGrassPlatform: function (level) { level.game.load.image('grass_pltf', 'assets/tiled_map/grass_pltf.png'); },
             loadGrayPlatform: function (level) { level.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png'); },
             loadIcedPlatform: function (level) { level.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png'); },
             loadCollidingPlatform: function (level) { level.game.load.image('platformTile', 'assets/tiled_map/platformTile.png'); },
