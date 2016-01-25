@@ -833,6 +833,14 @@ var Joust =
 
         loader:
         {
+            //Super auto load stuff!
+            autoLoadTilesets: function(level, mapKeyName, tileW, tileH)
+            {
+                level.map = level.game.add.tilemap(mapKeyName, tileW, tileH);
+                //??
+            },
+
+            //Common
             loadGrassPlatform: function (level) { level.game.load.image('grass_pltf', 'assets/tiled_map/grass_pltf.png'); },
             loadGrayPlatform: function (level) { level.game.load.image('gray_pltf', 'assets/tiled_map/gray_pltf.png'); },
             loadIcedPlatform: function (level) { level.game.load.image('iced_pltf', 'assets/tiled_map/iced_pltf.png'); },

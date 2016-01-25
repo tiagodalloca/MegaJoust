@@ -9,15 +9,16 @@ Joust.levels.demo.prototype =
     preload: function ()
     {
         this.game.load.tilemap('map', 'assets/tiled_map/tiled_map.json', null, Phaser.Tilemap.TILED_JSON);
-        Joust.utils.loader.loadGrassPlatform(this);
-        Joust.utils.loader.loadGrayPlatform(this);
-        Joust.utils.loader.loadIcedPlatform(this);
-        Joust.utils.loader.loadCollidingPlatform(this);
-        Joust.utils.loader.loadBackground(this, 'assets/tiled_map/backtile.png');
-        Joust.utils.loader.loadCheckpointFlag(this);
-        Joust.utils.loader.loadEnemieCrab(this);
-        Joust.utils.loader.loadEnemieSpiky(this);
-        Joust.utils.loader.loadKnight(this);
+        Joust.utils.loader.autoLoadTilesets(this, 'map');
+        //Joust.utils.loader.loadGrassPlatform(this);
+        //Joust.utils.loader.loadGrayPlatform(this);
+        //Joust.utils.loader.loadIcedPlatform(this);
+        //Joust.utils.loader.loadCollidingPlatform(this);
+        //Joust.utils.loader.loadBackground(this, 'assets/tiled_map/backtile.png');
+        //Joust.utils.loader.loadCheckpointFlag(this);
+        //Joust.utils.loader.loadEnemieCrab(this);
+        //Joust.utils.loader.loadEnemieSpiky(this);
+        //Joust.utils.loader.loadKnight(this);
         this.game.time.advancedTiming = true;
     },
 
@@ -27,7 +28,6 @@ Joust.levels.demo.prototype =
         this.game.world.setBounds(0, 0, this.game.width, this.game.height);
 
         //Tiled Map
-        this.map = this.game.add.tilemap('map');
         this.map.addTilesetImage('gray_pltf', 'gray_pltf');
         this.map.addTilesetImage('iced_pltf', 'iced_pltf');
         this.map.addTilesetImage('grass_pltf', 'grass_pltf');
