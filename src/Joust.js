@@ -850,7 +850,6 @@ var Joust =
                     Joust.utils.loader.loadKnight(this);
                     Joust.utils.loader.loadGrayPlatform(this);
                     Joust.utils.loader.loadIcedPlatform(this);
-                    Joust.utils.loader.loadCollidingPlatform(this);
                     Joust.utils.loader.loadGrassPlatform(this);
 
                     Joust.utils.forEveryItem(Joust.levels,
